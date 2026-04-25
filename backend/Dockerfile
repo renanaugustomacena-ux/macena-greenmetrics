@@ -27,7 +27,7 @@ RUN go build \
 # --- Stage 2: runtime (distroless, non-root) ---------------------------------
 # NOTE: digest pinning (v2.0 §10.4). Resolve via: crane digest gcr.io/distroless/static-debian12:nonroot
 # Pinned digest is refreshed monthly by Renovate; keep the :nonroot tag for humans.
-FROM gcr.io/distroless/static-debian12:nonroot@sha256:6cd937e9155bddfb0fa7aab9c63c74e139b7c1d3cb1a43616ea9bc710ab19cd7
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
 
 WORKDIR /app
 
