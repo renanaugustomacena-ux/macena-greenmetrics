@@ -86,12 +86,20 @@ if ! curl -fsS http://localhost:8082/api/health >/dev/null 2>&1; then
 fi
 
 # ----- migrations ------------------------------------------------------------
+#
+# Distroless backend image has neither shell nor `test`; we probe the migrate
+# binary directly. `/migrate version` exits 0 if the binary exists + DB is
+# reachable; otherwise we fall back to psql shell-out via timescaledb image.
 
 log "applying migrations…"
-if docker compose exec -T greenmetrics-backend test -x /usr/local/bin/goose 2>/dev/null; then
-    docker compose exec -T greenmetrics-backend goose -dir migrations postgres "$DATABASE_URL" up || warn "goose up returned non-zero — investigate"
+if docker compose exec -T greenmetrics-backend /migrate version >/dev/null 2>&1; then
+    # Apply only through 00009 — versions 00098 (RLS) and 00099 (audit lock)
+    # are deferred until the backend is wired to use InTxAsTenant + app_user
+    # role (Phase 2 of the doctrinal execution plan).
+    docker compose exec -T greenmetrics-backend /migrate -dir /app/migrations up-to 9 \
+        || warn "migrate up-to 9 returned non-zero — check 'docker compose logs greenmetrics-backend'"
 else
-    warn "goose not available in image yet (lands in S2); applying via psql shell-out"
+    warn "/migrate not in image; applying via psql shell-out (Go-coded migrations like 00098_rls_enable WILL BE SKIPPED)"
     for f in 0001_init.sql 0002_hypertables.sql 0003_continuous_aggregates.sql 0004_retention.sql 0005_emission_factors.sql; do
         docker compose exec -T greenmetrics-timescaledb psql -U greenmetrics -d greenmetrics -f "/docker-entrypoint-initdb.d/$f" >/dev/null 2>&1 || warn "$f already applied or skipped"
     done

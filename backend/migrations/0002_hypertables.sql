@@ -1,3 +1,11 @@
+-- +goose Up
+-- +goose NO TRANSACTION
+--
+-- Wrapped for goose v3 — file is idempotent (IF NOT EXISTS / OR REPLACE)
+-- and was applied originally via TimescaleDB /docker-entrypoint-initdb.d
+-- on first DB boot. Wrapping lets /migrate (cmd/migrate) record the
+-- version in goose_db_version without re-applying destructively.
+--
 -- 0002_hypertables.sql — raw readings hypertable.
 --
 -- Chunk interval: 1 day (spec requirement). A smaller interval would inflate
@@ -40,3 +48,10 @@ ALTER TABLE readings SET (
 SELECT add_compression_policy('readings', INTERVAL '7 days', if_not_exists => TRUE);
 
 COMMIT;
+
+-- +goose Down
+-- +goose NO TRANSACTION
+-- Down intentionally empty for this baseline migration. Production
+-- rollback of pre-goose schema relies on pg_dump/pg_restore — see
+-- docs/runbooks/db-outage.md.
+SELECT 1;

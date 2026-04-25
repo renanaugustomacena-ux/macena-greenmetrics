@@ -14,3 +14,10 @@ ALTER TABLE readings
 CREATE INDEX IF NOT EXISTS readings_meter_ingest_seq_idx
     ON readings (tenant_id, meter_id, ingest_seq);
 -- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+-- Lossy: dropping `ingest_seq` discards CDC/replay state. Operator must accept.
+DROP INDEX IF EXISTS readings_meter_ingest_seq_idx;
+ALTER TABLE readings DROP COLUMN IF EXISTS ingest_seq;
+-- +goose StatementEnd

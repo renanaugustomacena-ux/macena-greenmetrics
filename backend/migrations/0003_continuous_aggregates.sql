@@ -1,3 +1,11 @@
+-- +goose Up
+-- +goose NO TRANSACTION
+--
+-- Wrapped for goose v3 — file is idempotent (IF NOT EXISTS / OR REPLACE)
+-- and was applied originally via TimescaleDB /docker-entrypoint-initdb.d
+-- on first DB boot. Wrapping lets /migrate (cmd/migrate) record the
+-- version in goose_db_version without re-applying destructively.
+--
 -- 0003_continuous_aggregates.sql — 15min / 1h / 1d roll-ups.
 --
 -- Each level aggregates the level below, so refresh policies cascade.
@@ -80,3 +88,10 @@ SELECT add_continuous_aggregate_policy('readings_1d',
 CREATE INDEX IF NOT EXISTS readings_1d_meter_bucket_idx ON readings_1d(meter_id, bucket DESC);
 
 COMMIT;
+
+-- +goose Down
+-- +goose NO TRANSACTION
+-- Down intentionally empty for this baseline migration. Production
+-- rollback of pre-goose schema relies on pg_dump/pg_restore — see
+-- docs/runbooks/db-outage.md.
+SELECT 1;

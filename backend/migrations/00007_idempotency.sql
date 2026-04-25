@@ -3,10 +3,15 @@
 --
 -- Idempotency keys for POST endpoints (Rule 35, RFC 9457 / Stripe-style).
 -- Stored per-tenant, hashed request body, replayed response.
--- Retention 24 h via Timescale retention policy.
 --
 -- Doctrine refs: Rule 14, Rule 34, Rule 35.
 -- Mitigates: ingestion duplicates from retry storms; out-of-order client retries.
+--
+-- DESIGN NOTE: kept as a plain table (NOT a TimescaleDB hypertable) because the
+-- middleware's natural lookup key is (tenant_id, key) and Timescale requires
+-- the partition column to participate in every unique index. A 24h cleanup job
+-- handles retention out-of-band (see scripts/ops/idempotency-gc.sh, S5
+-- follow-on; for now, manual VACUUM + DELETE WHERE created_at < now() - '24h').
 
 CREATE TABLE IF NOT EXISTS idempotency_keys (
     tenant_id        UUID         NOT NULL,
@@ -19,16 +24,10 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
     PRIMARY KEY (tenant_id, key)
 );
 
--- Convert to hypertable for fast retention drop.
-SELECT create_hypertable(
-    'idempotency_keys',
-    'created_at',
-    chunk_time_interval => INTERVAL '1 day',
-    if_not_exists => TRUE
-);
-
--- 24h retention.
-SELECT add_retention_policy('idempotency_keys', INTERVAL '24 hours', if_not_exists => TRUE);
-
 CREATE INDEX IF NOT EXISTS idempotency_keys_created_at_idx ON idempotency_keys (created_at DESC);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE IF EXISTS idempotency_keys;
 -- +goose StatementEnd

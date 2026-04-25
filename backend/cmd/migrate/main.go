@@ -37,6 +37,13 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+
+	// Blank-import the migrations package so that Go-coded migration init()
+	// functions register themselves with goose's global registry. Without
+	// this import, only .sql migrations would be applied; the RLS migration
+	// 00006_rls_enable.go (Go-coded for per-table policy templating) would
+	// silently be skipped.
+	_ "github.com/greenmetrics/backend/migrations"
 )
 
 const defaultDir = "migrations"
@@ -93,8 +100,26 @@ func run(ctx context.Context, db *sql.DB, dir, cmd string, rest []string) error 
 		return goose.UpContext(ctx, db, dir)
 	case "up-by-one":
 		return goose.UpByOneContext(ctx, db, dir)
+	case "up-to":
+		if len(rest) < 1 {
+			return errors.New("up-to requires <version>")
+		}
+		var v int64
+		if _, err := fmt.Sscan(rest[0], &v); err != nil {
+			return fmt.Errorf("up-to: parse version %q: %w", rest[0], err)
+		}
+		return goose.UpToContext(ctx, db, dir, v)
 	case "down":
 		return goose.DownContext(ctx, db, dir)
+	case "down-to":
+		if len(rest) < 1 {
+			return errors.New("down-to requires <version>")
+		}
+		var v int64
+		if _, err := fmt.Sscan(rest[0], &v); err != nil {
+			return fmt.Errorf("down-to: parse version %q: %w", rest[0], err)
+		}
+		return goose.DownToContext(ctx, db, dir, v)
 	case "status":
 		return goose.StatusContext(ctx, db, dir)
 	case "version":
@@ -125,7 +150,9 @@ func usage() {
 Commands:
   up                Migrate up to most recent version.
   up-by-one         Migrate up exactly one migration.
+  up-to VERSION     Migrate up to (and including) the specified version.
   down              Roll back one migration.
+  down-to VERSION   Roll back to (and including) the specified version.
   status            Show migration status.
   version           Print current migration version.
   redo              Roll back and re-apply the most recent migration.

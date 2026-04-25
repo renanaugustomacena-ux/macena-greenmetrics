@@ -24,6 +24,15 @@ RUN go build \
     -o /out/greenmetrics-backend \
     ./cmd/server
 
+# Migration runner — separate static binary, ships alongside the server.
+# Imports the migrations package for Go-coded init() registrations
+# (RLS migration 00006 registers via goose.AddMigrationContext).
+RUN go build \
+    -trimpath \
+    -ldflags="-s -w" \
+    -o /out/migrate \
+    ./cmd/migrate
+
 # --- Stage 2: runtime (distroless, non-root) ---------------------------------
 # NOTE: digest pinning (v2.0 §10.4). Resolve via: crane digest gcr.io/distroless/static-debian12:nonroot
 # Pinned digest is refreshed monthly by Renovate; keep the :nonroot tag for humans.
@@ -32,6 +41,10 @@ FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6
 WORKDIR /app
 
 COPY --from=builder /out/greenmetrics-backend /app/greenmetrics-backend
+# Migration binary + .sql files at well-known paths so an operator can run:
+#   docker compose exec greenmetrics-backend /migrate -dir /app/migrations up
+COPY --from=builder /out/migrate /migrate
+COPY --from=builder /src/migrations /app/migrations
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 

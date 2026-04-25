@@ -1,3 +1,11 @@
+-- +goose Up
+-- +goose NO TRANSACTION
+--
+-- Wrapped for goose v3 — file is idempotent (IF NOT EXISTS / OR REPLACE)
+-- and was applied originally via TimescaleDB /docker-entrypoint-initdb.d
+-- on first DB boot. Wrapping lets /migrate (cmd/migrate) record the
+-- version in goose_db_version without re-applying destructively.
+--
 -- 0004_retention.sql — retention policies per spec.
 --
 -- Raw readings:          90 days
@@ -16,3 +24,10 @@ SELECT add_retention_policy('readings_1h',    INTERVAL '1095 days', if_not_exist
 SELECT add_retention_policy('readings_1d',    INTERVAL '3650 days', if_not_exists => TRUE);
 
 COMMIT;
+
+-- +goose Down
+-- +goose NO TRANSACTION
+-- Down intentionally empty for this baseline migration. Production
+-- rollback of pre-goose schema relies on pg_dump/pg_restore — see
+-- docs/runbooks/db-outage.md.
+SELECT 1;
