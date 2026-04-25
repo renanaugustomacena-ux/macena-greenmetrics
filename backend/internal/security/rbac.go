@@ -20,14 +20,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Role is a string-typed RBAC role label.
+// Role is a string-typed RBAC role label. String values must match
+// `internal/models/user.go` UserRole constants verbatim so JWT `role` claims
+// resolve correctly here.
 type Role string
 
 const (
 	RoleAdmin    Role = "admin"
+	RoleManager  Role = "manager"
 	RoleOperator Role = "operator"
-	RoleViewer   Role = "viewer"
 	RoleAuditor  Role = "auditor"
+	RoleViewer   Role = "viewer"
+	RoleReadOnly Role = "readonly"
 )
 
 // Permission is a colon-separated `resource:verb` grant.
@@ -64,6 +68,16 @@ var rolePermissions = map[Role][]Permission{
 		PermTenantsAdmin, PermUsersAdmin,
 		PermJobsRead, PermPulseIngest,
 	},
+	// Manager — admin minus user/tenant administration.
+	RoleManager: {
+		PermMetersRead, PermMetersWrite,
+		PermReadingsRead, PermReadingsIngest,
+		PermReportsRead, PermReportsGenerate,
+		PermAlertsRead, PermAlertsAck,
+		PermEmissionFactorsRead, PermEmissionFactorsWrite,
+		PermAuditRead,
+		PermJobsRead, PermPulseIngest,
+	},
 	RoleOperator: {
 		PermMetersRead, PermMetersWrite,
 		PermReadingsRead, PermReadingsIngest,
@@ -71,6 +85,15 @@ var rolePermissions = map[Role][]Permission{
 		PermAlertsRead, PermAlertsAck,
 		PermEmissionFactorsRead,
 		PermJobsRead, PermPulseIngest,
+	},
+	RoleAuditor: {
+		PermMetersRead,
+		PermReadingsRead,
+		PermReportsRead,
+		PermAlertsRead,
+		PermEmissionFactorsRead,
+		PermAuditRead,
+		PermJobsRead,
 	},
 	RoleViewer: {
 		PermMetersRead,
@@ -80,13 +103,13 @@ var rolePermissions = map[Role][]Permission{
 		PermEmissionFactorsRead,
 		PermJobsRead,
 	},
-	RoleAuditor: {
+	// ReadOnly — alias of Viewer for `internal/models/user.go` compatibility.
+	RoleReadOnly: {
 		PermMetersRead,
 		PermReadingsRead,
 		PermReportsRead,
 		PermAlertsRead,
 		PermEmissionFactorsRead,
-		PermAuditRead,
 		PermJobsRead,
 	},
 }
