@@ -1,0 +1,68 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: greenmetrics-api
+  namespace: greenmetrics
+  labels: { app: greenmetrics-backend, role: alert-rules }
+spec:
+  groups:
+    - name: greenmetrics-api
+      rules:
+
+        - alert: APIErrorRateHigh
+          expr: |
+            sum by (path) (rate(gm_http_requests_total{status=~"5.."}[5m]))
+              / sum by (path) (rate(gm_http_requests_total[5m])) > 0.01
+          for: 5m
+          labels: { severity: critical, app: greenmetrics-backend, runbook: db-outage }
+          annotations:
+            summary: "Backend 5xx rate > 1% on {{ $labels.path }}"
+            description: |
+              5xx error rate exceeded 1% over 5m on path {{ $labels.path }}.
+              Likely DB outage, breaker open, or panic leak. Check logs filtered by path + status=~"5..".
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/db-outage.md"
+
+        - alert: P99IngestBudget
+          expr: |
+            histogram_quantile(0.99,
+              sum by (le) (rate(gm_http_request_duration_seconds_bucket{path="/api/v1/readings/ingest"}[5m]))
+            ) > 0.12
+          for: 10m
+          labels: { severity: warning, app: greenmetrics-backend, runbook: capacity-spike }
+          annotations:
+            summary: "p99 ingest > 120 ms (budget violation)"
+            description: |
+              POST /api/v1/readings/ingest p99 latency exceeded 120 ms over 10m.
+              Check pgx pool acquire latency, ingest queue depth, breaker state.
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/capacity-spike.md"
+
+        - alert: P99LoginBudget
+          expr: |
+            histogram_quantile(0.99,
+              sum by (le) (rate(gm_http_request_duration_seconds_bucket{path="/api/v1/auth/login"}[5m]))
+            ) > 0.5
+          for: 5m
+          labels: { severity: warning, app: greenmetrics-backend, runbook: capacity-spike }
+          annotations:
+            summary: "p99 login > 500 ms"
+            description: |
+              POST /api/v1/auth/login p99 latency exceeded 500 ms.
+              bcrypt cost factor 12 baseline ~60 ms; overhead suggests pgx pool saturation or lockout-tracker contention.
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/capacity-spike.md"
+
+        - alert: APIDown
+          expr: up{job="greenmetrics-backend"} == 0
+          for: 2m
+          labels: { severity: critical, app: greenmetrics-backend, runbook: db-outage }
+          annotations:
+            summary: "All backend replicas unreachable"
+            description: "Prometheus cannot scrape any greenmetrics-backend pod for 2m."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/db-outage.md"
+
+        - alert: AbsentMetricsDeadMan
+          expr: absent(up{job="greenmetrics-backend"})
+          for: 10m
+          labels: { severity: critical, app: greenmetrics-backend }
+          annotations:
+            summary: "No metrics from greenmetrics-backend (dead-man-switch)"
+            description: "Prometheus has no series matching job=greenmetrics-backend; verify pods + ServiceMonitor."

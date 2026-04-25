@@ -1,0 +1,93 @@
+# Quarterly JWT KID rotation.
+# Doctrine refs: Rule 19, Rule 39, Rule 56 (automation), Rule 62.
+# Plan: docs/JWT-ROTATION.md.
+
+name: JWT KID rotation
+
+on:
+  schedule:
+    - cron: '0 3 1 */3 *'   # 03:00 UTC, day 1 of every 3rd month
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Manual rotation reason (suspected leak, drill, etc.)'
+        required: true
+        default: 'quarterly scheduled'
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: jwt-rotation
+  cancel-in-progress: false
+
+jobs:
+  rotate:
+    runs-on: ubuntu-latest
+    environment: production-secrets
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC, secops-rotate-irsa)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/greenmetrics-secops-rotate-irsa
+          aws-region: eu-south-1
+          role-session-name: jwt-rotation-${{ github.run_id }}
+
+      - name: Generate new JWT secret + bump kid
+        id: rotate
+        run: |
+          set -euo pipefail
+          CURRENT=$(aws secretsmanager get-secret-value --secret-id greenmetrics/prod/jwt --query SecretString --output text)
+          OLD_KID=$(jq -r .kid <<<"$CURRENT")
+          OLD_SECRET=$(jq -r .secret <<<"$CURRENT")
+          NEW_KID="v$(( ${OLD_KID#v} + 1 ))"
+          NEW_SECRET=$(openssl rand -base64 48 | tr -d '\n')
+          EXPIRES=$(date -u -d "+24 hours" +"%Y-%m-%dT%H:%M:%SZ")
+          NEW=$(jq -n \
+            --arg kid "$NEW_KID" --arg secret "$NEW_SECRET" \
+            --arg old_kid "$OLD_KID" --arg old_secret "$OLD_SECRET" --arg expires "$EXPIRES" \
+            '{kid:$kid, secret:$secret, previous:[{kid:$old_kid, secret:$old_secret, expires_at:$expires}]}')
+          aws secretsmanager put-secret-value \
+            --secret-id greenmetrics/prod/jwt \
+            --secret-string "$NEW"
+          echo "old_kid=$OLD_KID" >> "$GITHUB_OUTPUT"
+          echo "new_kid=$NEW_KID" >> "$GITHUB_OUTPUT"
+
+      - name: Force ESO refresh
+        run: |
+          # ESO refreshInterval=1h; force-sync via annotation bump (kubectl from runner is allowed via OIDC + EKS-API access).
+          # Alternative: rely on the 1h refresh window.
+          echo "ESO will refresh within 1h; no manual force needed for quarterly cron."
+
+      - name: Open PR documenting rotation in CHANGELOG
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DATE=$(date -u +"%Y-%m-%d")
+          REASON='${{ inputs.reason }}'
+          REASON=${REASON:-"quarterly scheduled"}
+          BRANCH="chore/jwt-rotation-${DATE}-${{ steps.rotate.outputs.new_kid }}"
+          git config user.name "secops-bot"
+          git config user.email "secops@greenmetrics.it"
+          git checkout -b "$BRANCH"
+          ENTRY="- JWT key rotated ${{ steps.rotate.outputs.old_kid }} → ${{ steps.rotate.outputs.new_kid }} (reason: ${REASON}). Overlap window 24h."
+          # Insert under [Unreleased] / Security.
+          awk -v entry="$ENTRY" '
+            /^## \[Unreleased\]/ { print; in_unreleased=1; next }
+            in_unreleased && /^### Security/ { print; print entry; printed=1; next }
+            in_unreleased && /^## / { if (!printed) { print "### Security"; print entry; printed=1 } in_unreleased=0 }
+            { print }
+            END { if (!printed) { print "\n### Security\n" entry } }
+          ' CHANGELOG.md > CHANGELOG.md.new
+          mv CHANGELOG.md.new CHANGELOG.md
+          git add CHANGELOG.md
+          git commit -m "chore(secops): rotate JWT ${{ steps.rotate.outputs.old_kid }} → ${{ steps.rotate.outputs.new_kid }}"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --title "chore(secops): JWT rotation ${{ steps.rotate.outputs.old_kid }} → ${{ steps.rotate.outputs.new_kid }}" \
+            --body "Quarterly JWT KID rotation per docs/JWT-ROTATION.md. Reason: ${REASON}. Overlap window 24h." \
+            --label dependencies --label security

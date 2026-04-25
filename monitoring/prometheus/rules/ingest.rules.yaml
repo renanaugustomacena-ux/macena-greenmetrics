@@ -1,0 +1,57 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: greenmetrics-ingest
+  namespace: greenmetrics
+  labels: { app: greenmetrics-backend, role: alert-rules }
+spec:
+  groups:
+    - name: greenmetrics-ingest
+      rules:
+
+        - alert: IngestQueueSaturated
+          expr: gm_ingest_queue_depth > 8000
+          for: 2m
+          labels: { severity: warning, runbook: pulse-webhook-flood }
+          annotations:
+            summary: "Ingest queue depth > 8000 (saturation)"
+            description: "Ingest pipeline queue exceeded 80% of capacity. Drops imminent."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/pulse-webhook-flood.md"
+
+        - alert: IngestDropped
+          expr: rate(gm_ingest_dropped_total[5m]) > 0
+          for: 1m
+          labels: { severity: critical, runbook: pulse-webhook-flood }
+          annotations:
+            summary: "Readings dropped from ingest pipeline (queue full)"
+            description: "Ingest queue overflowed; readings discarded. Verify upstream rate, scale replicas, or open spill mode."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/pulse-webhook-flood.md"
+
+        - alert: BreakerOpen
+          expr: gm_breaker_state == 1
+          for: 5m
+          labels: { severity: warning, runbook: db-outage }
+          annotations:
+            summary: "Circuit breaker open: {{ $labels.name }}"
+            description: |
+              Breaker {{ $labels.name }} has been open for 5m. Upstream is failing repeatedly.
+              Backend serving from cached factors with `data_freshness` stamp where applicable.
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/db-outage.md"
+
+        - alert: ExternalAPIFallback
+          expr: rate(gm_external_api_fallback_total[5m]) > 0
+          for: 5m
+          labels: { severity: warning, runbook: db-outage }
+          annotations:
+            summary: "External API fallback active: {{ $labels.api }}"
+            description: "Backend served {{ $labels.api }} data from cache. Verify upstream + breaker state."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/db-outage.md"
+
+        - alert: ModbusIngestStalled
+          expr: rate(gm_ingest_readings_total{protocol="modbus"}[10m]) == 0
+          for: 15m
+          labels: { severity: warning, runbook: ingestor-crash-loop }
+          annotations:
+            summary: "No Modbus readings ingested in 15m"
+            description: "Modbus ingestor has produced zero readings for 15m; verify simulator / hosts / NetworkPolicy."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/ingestor-crash-loop.md"

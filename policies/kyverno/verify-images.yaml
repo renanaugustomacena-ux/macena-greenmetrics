@@ -1,0 +1,56 @@
+# Kyverno admission — verify Cosign signatures bound to GitHub workflow identity.
+# Doctrine: Rule 19, Rule 39, Rule 53, Rule 54, Rule 65.
+# Mitigates: RISK-005, RISK-017.
+# Plan ADR: docs/adr/0017-cosign-keyless-oidc.md.
+
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-greenmetrics-images
+  annotations:
+    policies.kyverno.io/title: "Verify GreenMetrics image signatures (Sigstore Fulcio + GitHub OIDC)"
+    policies.kyverno.io/category: "Software Supply Chain Security"
+    policies.kyverno.io/severity: "high"
+    policies.kyverno.io/subject: "Pod, Image"
+    policies.kyverno.io/risk: "RISK-005, RISK-017"
+spec:
+  validationFailureAction: Enforce
+  background: false
+  webhookTimeoutSeconds: 30
+  rules:
+
+    - name: verify-greenmetrics-backend
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [greenmetrics, greenmetrics-staging]
+      verifyImages:
+        - imageReferences:
+            - "ghcr.io/*/greenmetrics-backend:*"
+            - "ghcr.io/*/greenmetrics-backend@sha256:*"
+          attestors:
+            - entries:
+                - keyless:
+                    issuer: https://token.actions.githubusercontent.com
+                    subject: "https://github.com/*/greenmetrics/.github/workflows/cd.yml@*"
+                    rekor:
+                      url: https://rekor.sigstore.dev
+
+    - name: verify-greenmetrics-frontend
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [greenmetrics, greenmetrics-staging]
+      verifyImages:
+        - imageReferences:
+            - "ghcr.io/*/greenmetrics-frontend:*"
+            - "ghcr.io/*/greenmetrics-frontend@sha256:*"
+          attestors:
+            - entries:
+                - keyless:
+                    issuer: https://token.actions.githubusercontent.com
+                    subject: "https://github.com/*/greenmetrics/.github/workflows/cd.yml@*"
+                    rekor:
+                      url: https://rekor.sigstore.dev

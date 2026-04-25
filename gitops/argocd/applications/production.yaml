@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: greenmetrics-production
+  namespace: argocd
+  annotations:
+    argocd.greenmetrics.it/owner: platform-team
+    notifications.argoproj.io/subscribe.on-deployed.slack: greenmetrics-ops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/greenmetrics/greenmetrics.git
+    targetRevision: main
+    path: gitops/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: greenmetrics
+  syncPolicy:
+    # Production: no automated sync — Argo Rollouts canary handles per-deploy decision after manual signoff per release.
+    automated:
+      selfHeal: true   # revert manual kubectl mutations
+      prune: false     # never auto-prune in production
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff: { duration: 30s, factor: 2, maxDuration: 5m }

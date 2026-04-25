@@ -1,0 +1,8 @@
+// Copyright (c) 2026 Renan Augusto Macena. All rights reserved.
+//
+// This file is part of GreenMetrics. Use, copying, modification, distribution,
+// or any other exploitation requires the express prior written permission of
+// the copyright holder. See LICENSE at the repository root for the full
+// proprietary licence governing this Software.
+//
+// For licensing enquiries: renanaugustomacena@gmail.com.

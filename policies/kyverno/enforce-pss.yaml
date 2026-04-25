@@ -1,0 +1,80 @@
+# Kyverno admission — Pod Security Standards `restricted` enforcement.
+# Defence-in-depth duplicate of conftest rules; admission-time gate against drift.
+# Doctrine: Rule 19, Rule 39, Rule 54.
+
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: enforce-pss-restricted
+  annotations:
+    policies.kyverno.io/title: "Enforce Pod Security Standards (restricted)"
+    policies.kyverno.io/category: "Pod Security Standards"
+    policies.kyverno.io/severity: "high"
+    policies.kyverno.io/risk: "RISK-006"
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+
+    - name: deny-privileged
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [greenmetrics, greenmetrics-staging]
+      validate:
+        message: "Privileged containers are forbidden (Rule 19, RISK-006)."
+        pattern:
+          spec:
+            =(initContainers):
+              - =(securityContext):
+                  =(privileged): "false"
+            containers:
+              - =(securityContext):
+                  =(privileged): "false"
+
+    - name: require-runAsNonRoot
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [greenmetrics, greenmetrics-staging]
+      validate:
+        message: "runAsNonRoot must be true."
+        anyPattern:
+          - spec:
+              securityContext:
+                runAsNonRoot: true
+          - spec:
+              containers:
+                - securityContext:
+                    runAsNonRoot: true
+
+    - name: require-readOnlyRootFilesystem
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [greenmetrics, greenmetrics-staging]
+      validate:
+        message: "readOnlyRootFilesystem must be true."
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  readOnlyRootFilesystem: true
+
+    - name: require-drop-all-capabilities
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [greenmetrics, greenmetrics-staging]
+      validate:
+        message: "capabilities.drop must include ALL."
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  capabilities:
+                    drop: ["ALL"]

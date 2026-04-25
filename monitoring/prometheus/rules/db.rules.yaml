@@ -1,0 +1,66 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: greenmetrics-db
+  namespace: greenmetrics
+  labels: { app: greenmetrics-backend, role: alert-rules }
+spec:
+  groups:
+    - name: greenmetrics-db
+      rules:
+
+        - alert: DBPrimaryDown
+          expr: pg_up{job="postgres-exporter"} == 0
+          for: 2m
+          labels: { severity: critical, runbook: db-outage }
+          annotations:
+            summary: "Postgres primary down"
+            description: "postgres-exporter cannot reach the primary for 2m."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/db-outage.md"
+
+        - alert: PgxPoolAcquireSlow
+          expr: |
+            histogram_quantile(0.99,
+              sum by (le) (rate(gm_db_pool_acquire_duration_seconds_bucket[5m]))
+            ) > 0.05
+          for: 10m
+          labels: { severity: warning, runbook: capacity-spike }
+          annotations:
+            summary: "pgx pool acquire p99 > 50 ms (saturated)"
+            description: |
+              pgx pool acquire p99 exceeded 50 ms; pool likely saturated. Hold-time per request × replicas vs pool max 25.
+              Consider: scale replicas, deploy pgbouncer (≥ 6 replicas), shard ingestor (Rule 38).
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/capacity-spike.md"
+
+        - alert: CAGGRefreshLag
+          expr: |
+            time() - gm_cagg_last_refresh_timestamp_seconds{view="readings_15min"} > 120
+          for: 5m
+          labels: { severity: warning, runbook: db-outage }
+          annotations:
+            summary: "Continuous aggregate readings_15min refresh lag > 2m"
+            description: |
+              CAGG refresh has not completed in 2m. Aggregated dashboards stale.
+              Manual refresh: `SELECT refresh_continuous_aggregate('readings_15min', NULL, NULL)`.
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/db-outage.md"
+
+        - alert: TimescaleStorageHigh
+          expr: |
+            ( pg_database_size_bytes{datname="greenmetrics"}
+              / pg_settings_shared_buffers_bytes{job="postgres-exporter"} ) > 5
+          for: 30m
+          labels: { severity: warning, runbook: cost-audit }
+          annotations:
+            summary: "TimescaleDB storage / shared_buffers > 5×"
+            description: "Storage growth outpaces shared_buffers budget. Verify retention, compression, capacity model."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/cost-audit.md"
+
+        - alert: DBReplicaLag
+          expr: |
+            pg_replication_lag_seconds{job="postgres-exporter"} > 30
+          for: 10m
+          labels: { severity: warning, runbook: db-outage }
+          annotations:
+            summary: "DB replica lag > 30 s"
+            description: "Read replica is behind primary. Reads from replica may be stale."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/db-outage.md"

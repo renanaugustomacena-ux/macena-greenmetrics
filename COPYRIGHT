@@ -1,0 +1,17 @@
+Copyright (c) 2026 Renan Augusto Macena. All rights reserved.
+
+GreenMetrics is the exclusive intellectual property of Renan Augusto Macena.
+The full proprietary licence governing this Software is set out in the
+LICENSE file at the root of this repository.
+
+For per-file attribution and a comprehensive list of contributors, see the
+AUTHORS file.
+
+For trademark policy and permitted uses of the GreenMetrics, Macena, and
+related marks, see TRADEMARK.md.
+
+For attribution of incorporated open-source components, see NOTICE and the
+SBOM artefact attached to every released container image (see
+docs/SUPPLY-CHAIN.md).
+
+For licensing enquiries: renanaugustomacena@gmail.com.

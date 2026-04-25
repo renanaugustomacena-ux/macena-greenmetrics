@@ -1,0 +1,60 @@
+# AWS Backup snapshot policy reference (forensic readiness).
+# Doctrine refs: Rule 60.
+# Mitigates: RISK-009, RISK-010, RISK-025.
+#
+# This is documentation as code — the actual AWS Backup plan is provisioned
+# via terraform/modules/backup/main.tf (S5 to ship). Argo CD does not deploy
+# AWS Backup; this file is the source of truth for the operator's expectation
+# of snapshot cadence + retention.
+
+apiVersion: greenmetrics.it/v1
+kind: SnapshotPolicy
+metadata:
+  name: greenmetrics-backup-policy
+  namespace: greenmetrics
+  annotations:
+    secops.greenmetrics.it/risk: "RISK-009, RISK-010, RISK-025"
+    secops.greenmetrics.it/owner: "@greenmetrics/sre"
+spec:
+  # RDS automated backup
+  rdsBackup:
+    instance: greenmetrics-prod
+    interval: 4h
+    retention: 90d
+    crossRegionCopy:
+      enabled: true
+      destinationRegion: eu-west-1
+
+  # AWS Backup plan for EBS PVCs (Loki + Prometheus)
+  ebsBackup:
+    schedule: "cron(0 */4 * * ? *)"   # every 4h
+    retention: 90d
+    selector:
+      tagKey: greenmetrics:backup
+      tagValue: "true"
+    coldStorageAfterDays: 30
+    deleteAfterDays: 90
+    crossRegionCopy:
+      enabled: true
+      destinationRegion: eu-west-1
+
+  # S3 Object Lock — audit bucket
+  s3Audit:
+    bucket: greenmetrics-audit
+    objectLockMode: COMPLIANCE   # not GOVERNANCE — operator cannot bypass
+    objectLockRetentionDays: 1825   # 5 years
+    versioning: enabled
+    crossRegionReplication:
+      enabled: true
+      destinationBucket: greenmetrics-audit-dr
+
+  # Alert on snapshot failure
+  alerts:
+    - name: AWSBackupJobFailed
+      threshold: ">=1 failure in 24h"
+      severity: critical
+      runbook: docs/runbooks/region-failover.md
+    - name: SnapshotAgeStale
+      threshold: "max age > 5h"
+      severity: warning
+      runbook: docs/runbooks/region-failover.md

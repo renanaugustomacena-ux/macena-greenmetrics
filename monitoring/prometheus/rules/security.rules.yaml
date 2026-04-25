@@ -1,0 +1,85 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: greenmetrics-security
+  namespace: greenmetrics
+  labels: { app: greenmetrics-backend, role: alert-rules }
+spec:
+  groups:
+    - name: greenmetrics-security
+      rules:
+
+        - alert: LoginFailureSpike
+          expr: |
+            rate(gm_login_failed_total[5m])
+              > 5 * (avg_over_time(rate(gm_login_failed_total[5m])[1d:5m]) + 0.001)
+          for: 5m
+          labels: { severity: warning, runbook: tenant-data-leak }
+          annotations:
+            summary: "Login failure rate spike (5× over 1d baseline)"
+            description: "Possible brute-force; verify lockout active + WAF rate-rule effective."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/tenant-data-leak.md"
+
+        - alert: JWTVerifySlow
+          expr: |
+            histogram_quantile(0.99,
+              sum by (le) (rate(gm_jwt_verify_duration_seconds_bucket[5m]))
+            ) > 0.020
+          for: 10m
+          labels: { severity: warning }
+          annotations:
+            summary: "JWT verify p99 > 20 ms"
+            description: "JWT verify path slow; check kid lookup map size, secret material rotation."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/jwt-secret-rotation.md"
+
+        - alert: JWTSecretAgeExceeded
+          expr: |
+            (time() - aws_secretsmanager_secret_last_rotated_timestamp_seconds{secret="greenmetrics/prod/jwt"}) > 7776000
+          for: 1h
+          labels: { severity: critical, runbook: jwt-secret-rotation }
+          annotations:
+            summary: "JWT secret > 90 days since rotation"
+            description: "Quarterly JWT KID rotation has not run; possible workflow failure or AWS Secrets Manager API outage."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/jwt-secret-rotation.md"
+
+        - alert: ESONotSynced
+          expr: |
+            external_secrets_status_condition{status="True", condition="Ready"} == 0
+          for: 10m
+          labels: { severity: warning, runbook: secret-rotation }
+          annotations:
+            summary: "ExternalSecret {{ $labels.name }} not synced"
+            description: "ESO has been unable to sync the secret for 10m. Verify ClusterSecretStore + IRSA + AWS Secrets Manager API."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/secret-rotation.md"
+
+        - alert: CertificateExpirySoon
+          expr: |
+            (cert_exporter_not_after - time()) < 1209600
+          for: 1h
+          labels: { severity: warning, runbook: cert-rotation }
+          annotations:
+            summary: "TLS certificate expires in < 14 days"
+            description: "Certificate {{ $labels.cn }} expires in < 14 days. cert-manager renewal may be failing; check ACME HTTP-01 + Let's Encrypt rate limits."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/cert-rotation.md"
+
+        - alert: KyvernoAdmissionSlow
+          expr: |
+            histogram_quantile(0.99,
+              sum by (le) (rate(kyverno_admission_review_duration_seconds_bucket[5m]))
+            ) > 1
+          for: 10m
+          labels: { severity: warning }
+          annotations:
+            summary: "Kyverno admission p99 > 1s"
+            description: "Kyverno webhook latency high; new pod creation slow; verify Kyverno HA + resource budget."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/grafana-down.md"
+
+        - alert: FalcoCriticalRule
+          expr: |
+            sum(rate(falco_events_total{priority=~"Critical|Error"}[5m])) > 0
+          for: 1m
+          labels: { severity: critical, runbook: tenant-data-leak }
+          annotations:
+            summary: "Falco fired a Critical/Error rule"
+            description: "Investigate Loki for Falco event details; possible runtime intrusion."
+            runbook_url: "https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/tenant-data-leak.md"

@@ -1,0 +1,35 @@
+# Kyverno admission — require resources.requests + resources.limits.
+# Defence-in-depth duplicate of conftest rules.
+# Doctrine: Rule 15, Rule 16, Rule 22, Rule 42, Rule 54.
+
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resources
+  annotations:
+    policies.kyverno.io/title: "Require resources.requests + resources.limits on every container"
+    policies.kyverno.io/category: "Reliability + Cost"
+    policies.kyverno.io/severity: "medium"
+    policies.kyverno.io/risk: "RISK-014, RISK-015, RISK-021"
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: must-set-resources
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [greenmetrics, greenmetrics-staging]
+      validate:
+        message: "resources.requests and resources.limits must be set on every container."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    cpu: "?*"
+                    memory: "?*"

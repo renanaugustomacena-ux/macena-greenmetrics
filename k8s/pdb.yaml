@@ -1,0 +1,26 @@
+---
+# PodDisruptionBudget: keep at least one pod available during voluntary
+# disruptions (node drains, rolling updates).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: greenmetrics-backend
+  namespace: greenmetrics
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: greenmetrics
+      component: backend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: greenmetrics-frontend
+  namespace: greenmetrics
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: greenmetrics
+      component: frontend

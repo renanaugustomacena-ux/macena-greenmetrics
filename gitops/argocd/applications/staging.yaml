@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: greenmetrics-staging
+  namespace: argocd
+  annotations:
+    argocd.greenmetrics.it/owner: platform-team
+    argocd-image-updater.argoproj.io/image-list: backend=ghcr.io/greenmetrics/greenmetrics-backend, frontend=ghcr.io/greenmetrics/greenmetrics-frontend
+    argocd-image-updater.argoproj.io/backend.update-strategy: digest
+    argocd-image-updater.argoproj.io/frontend.update-strategy: digest
+    argocd-image-updater.argoproj.io/backend.allow-tags: regexp:^[0-9a-f]{40}$
+    argocd-image-updater.argoproj.io/frontend.allow-tags: regexp:^[0-9a-f]{40}$
+    argocd-image-updater.argoproj.io/write-back-method: git
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/greenmetrics/greenmetrics.git
+    targetRevision: main
+    path: gitops/staging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: greenmetrics-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff: { duration: 5s, factor: 2, maxDuration: 3m }

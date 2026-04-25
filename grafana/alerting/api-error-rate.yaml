@@ -1,0 +1,34 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: greenmetrics-api-error-rate
+    folder: GreenMetrics
+    interval: 1m
+    rules:
+      - uid: gm-api-5xx-rate
+        title: GreenMetrics API 5xx rate > 1%
+        condition: B
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              expr: |
+                sum(rate(gm_http_requests_total{status=~"5.."}[5m]))
+                  / clamp_min(sum(rate(gm_http_requests_total[5m])), 1)
+              refId: A
+              instant: true
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions: [{ evaluator: { type: gt, params: [0.01] } }]
+              refId: B
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          runbook_url: https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/db-outage.md
+          summary: "5xx rate exceeded 1% over 5m"
+        labels: { severity: critical, app: greenmetrics-backend }

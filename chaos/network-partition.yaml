@@ -1,0 +1,19 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: api-db-partition
+  namespace: greenmetrics-staging
+  annotations: { chaos.greenmetrics.it/experiment: CE-02, chaos.greenmetrics.it/runbook: db-outage }
+spec:
+  action: partition
+  mode: all
+  selector:
+    namespaces: [greenmetrics-staging]
+    labelSelectors: { app: greenmetrics-backend }
+  direction: to
+  target:
+    mode: one
+    selector:
+      namespaces: [greenmetrics-staging]
+      labelSelectors: { app: timescaledb }
+  duration: 2m

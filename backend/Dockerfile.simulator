@@ -1,0 +1,34 @@
+# syntax=docker/dockerfile:1.7
+# --- Builder stage ------------------------------------------------------------
+FROM golang:1.26-alpine AS builder
+
+WORKDIR /src
+# hadolint ignore=DL3018 — Alpine apk uses rolling versions; pinning is noisy.
+RUN apk add --no-cache git ca-certificates tzdata
+COPY go.mod go.sum ./
+RUN go mod download || true
+COPY . .
+
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+
+RUN go build \
+    -trimpath \
+    -ldflags="-s -w" \
+    -o /out/greenmetrics-simulator \
+    ./cmd/simulator
+
+# --- Runtime stage (distroless, non-root) -------------------------------------
+# Digest-pinned per v2.0 §10.4 — matches backend Dockerfile.
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:6cd937e9155bddfb0fa7aab9c63c74e139b7c1d3cb1a43616ea9bc710ab19cd7
+WORKDIR /app
+COPY --from=builder /out/greenmetrics-simulator /app/greenmetrics-simulator
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+USER nonroot:nonroot
+EXPOSE 5020
+ENV SIM_LISTEN=0.0.0.0:5020 \
+    SIM_TZ=Europe/Rome \
+    SIM_PROFILE=factory_line_verona
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD ["/app/greenmetrics-simulator", "--healthcheck"]
+ENTRYPOINT ["/app/greenmetrics-simulator"]

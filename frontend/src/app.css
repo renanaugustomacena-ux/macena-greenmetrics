@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: theme('fontFamily.sans');
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-semibold text-forest-900;
+  }
+
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    @apply outline-none ring-2 ring-forest-600 ring-offset-2 ring-offset-cream-50;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-forest-100 p-6;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-colors;
+  }
+  .btn-primary {
+    @apply btn bg-forest-800 text-cream-50 hover:bg-forest-700 focus-visible:ring-forest-600;
+  }
+  .btn-secondary {
+    @apply btn bg-earth-100 text-earth-900 hover:bg-earth-200;
+  }
+  .badge-scope-1 { @apply bg-earth-100 text-earth-900 px-2 py-0.5 rounded text-xs font-medium; }
+  .badge-scope-2 { @apply bg-forest-100 text-forest-900 px-2 py-0.5 rounded text-xs font-medium; }
+  .badge-scope-3 { @apply bg-cream-200 text-earth-900 px-2 py-0.5 rounded text-xs font-medium; }
+}

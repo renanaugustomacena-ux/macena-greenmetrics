@@ -1,0 +1,50 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: greenmetrics-backend
+  namespace: greenmetrics
+  labels:
+    app: greenmetrics
+    component: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: greenmetrics
+    component: backend
+  ports:
+    - name: http
+      port: 8082
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: greenmetrics-frontend
+  namespace: greenmetrics
+  labels:
+    app: greenmetrics
+    component: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: greenmetrics
+    component: frontend
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: greenmetrics-backend
+  namespace: greenmetrics
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: greenmetrics-frontend
+  namespace: greenmetrics

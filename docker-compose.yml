@@ -1,0 +1,168 @@
+# GreenMetrics — full stack local orchestration.
+#
+# Port map (Mission II contract):
+#   greenmetrics-backend       Go (Fiber) API on :8082
+#   greenmetrics-frontend      SvelteKit 2 on :3005
+#   greenmetrics-timescaledb   TimescaleDB 2.x / PG16 on :5439
+#   greenmetrics-grafana       Grafana on :3011 with provisioning mounted
+#   greenmetrics-simulator     Modbus-TCP simulator on :5020 (internal only)
+#
+# Named volumes persist data across `docker compose down` (not `down -v`).
+
+services:
+  greenmetrics-timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: greenmetrics-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-greenmetrics}
+      POSTGRES_USER: ${POSTGRES_USER:-greenmetrics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set — refuse default}
+      TS_TUNE_MEMORY: "2GB"
+      TS_TUNE_NUM_CPUS: "4"
+    ports:
+      - "5439:5432"
+    volumes:
+      - greenmetrics_timescale_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-greenmetrics} -d ${POSTGRES_DB:-greenmetrics}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  greenmetrics-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        VERSION: "0.1.0"
+    container_name: greenmetrics-backend
+    restart: unless-stopped
+    depends_on:
+      greenmetrics-timescaledb:
+        condition: service_healthy
+      greenmetrics-grafana:
+        condition: service_started
+      greenmetrics-simulator:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      APP_PORT: "8082"
+      DATABASE_URL: postgres://${POSTGRES_USER:-greenmetrics}:${POSTGRES_PASSWORD}@greenmetrics-timescaledb:5432/${POSTGRES_DB:-greenmetrics}?sslmode=${DB_SSLMODE:-prefer}
+      GRAFANA_URL: http://greenmetrics-grafana:3000
+      GRAFANA_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GRAFANA_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set — refuse default}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set — refuse default}
+      JWT_ACCESS_TTL: "15m"
+      JWT_REFRESH_TTL: "720h"
+      OTEL_SERVICE_NAME: greenmetrics-backend
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      ISPRA_EMISSION_FACTORS_URL: https://www.isprambiente.gov.it/it/pubblicazioni/rapporti/fattori-di-emissione
+      TERNA_API_BASE: https://api.terna.it
+      E_DISTRIBUZIONE_API_BASE: https://api.e-distribuzione.it
+      MODBUS_TCP_TIMEOUT_MS: "3000"
+      MODBUS_SIMULATOR_ADDR: greenmetrics-simulator:5020
+      MODBUS_POLL_INTERVAL_S: "30"
+      MODBUS_SLAVE_IDS: "1,2,3,4,5"
+      MBUS_SERIAL_DEVICE: ""
+      SPD_CLIENT_CERT_PATH: /etc/greenmetrics/spd-client.pem
+      RATE_LIMIT_PER_MINUTE: "60"
+      RATE_LIMIT_LOGIN_PER_MINUTE: "5"
+      RATE_LIMIT_INGEST_PER_MINUTE: "300"
+      AUTH_LOCKOUT_THRESHOLD: "5"
+      AUTH_LOCKOUT_WINDOW_MIN: "15"
+      SESSION_IDLE_MINUTES: "15"
+      SESSION_ABSOLUTE_HOURS: "12"
+      PULSE_WEBHOOK_SECRET: ${PULSE_WEBHOOK_SECRET:-}
+      OCPP_CENTRAL_SYSTEM_URL: ${OCPP_CENTRAL_SYSTEM_URL:-}
+      SUNSPEC_MODBUS_ADDR: ${SUNSPEC_MODBUS_ADDR:-}
+    ports:
+      - "8082:8082"
+    healthcheck:
+      test: ["CMD", "/app/greenmetrics-backend", "--healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  greenmetrics-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: greenmetrics-frontend
+    restart: unless-stopped
+    depends_on:
+      greenmetrics-backend:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3005}
+      BODY_SIZE_LIMIT: "1048576"
+      PUBLIC_API_BASE: http://greenmetrics-backend:8082/api/v1
+    ports:
+      - "3005:3000"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  greenmetrics-grafana:
+    image: grafana/grafana:latest
+    container_name: greenmetrics-grafana
+    restart: unless-stopped
+    depends_on:
+      greenmetrics-timescaledb:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set — refuse default}
+      # GF_INSTALL_PLUGINS is deprecated since Grafana 11; use plugins.preinstall instead.
+      GF_PLUGINS_PREINSTALL: grafana-piechart-panel
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3011}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GRAFANA_DB_USER: ${POSTGRES_USER:-greenmetrics}
+      GRAFANA_DB_NAME: ${POSTGRES_DB:-greenmetrics}
+      GRAFANA_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "3011:3000"
+    volumes:
+      - greenmetrics_grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  greenmetrics-simulator:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.simulator
+    container_name: greenmetrics-simulator
+    restart: unless-stopped
+    environment:
+      SIM_LISTEN: "0.0.0.0:5020"
+      SIM_TZ: Europe/Rome
+      SIM_PROFILE: factory_line_verona
+    ports:
+      - "5020:5020"
+    # The simulator image is distroless — no shell, no `nc`. The binary owns
+    # its own --healthcheck flag that dials the listen port from inside the
+    # container (see backend/cmd/simulator/main.go runHealthcheck).
+    healthcheck:
+      test: ["CMD", "/app/greenmetrics-simulator", "--healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  greenmetrics_timescale_data:
+  greenmetrics_grafana_data:
+
+networks:
+  default:
+    name: greenmetrics

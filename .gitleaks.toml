@@ -1,0 +1,26 @@
+# GreenMetrics gitleaks configuration.
+#
+# Extends the default gitleaks ruleset with an allowlist for obviously-labelled
+# test fixtures. Real credentials are NEVER tolerated and the repository carries
+# none; `.env.example` uses placeholder values that include the word "CHANGEME".
+
+title = "GreenMetrics gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allow obvious test fixtures only"
+# Anchored test-token values embedded in unit tests — these are not real
+# credentials and are not accepted by production config (JWT_SECRET is
+# validated for length only; the test string literally says it is a test).
+regexTarget = "match"
+regexes = [
+  '''long-enough-jwt-secret-of-at-least-32-bytes-ok''',
+  '''CHANGEME''',
+]
+paths = [
+  '''backend/tests/.*\.go$''',
+  '''\.env\.example$''',
+  '''\.gitleaks\.toml$''',
+]

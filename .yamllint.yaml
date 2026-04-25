@@ -1,0 +1,28 @@
+# yamllint config — strict but practical for K8s + GitHub Actions + compose.
+extends: default
+
+rules:
+  line-length:
+    max: 200
+    level: warning
+  document-start: disable
+  comments:
+    min-spaces-from-content: 1
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off', 'yes', 'no']
+    check-keys: false   # GitHub Actions uses `on:` as a key
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+  braces:
+    max-spaces-inside: 1
+  brackets:
+    max-spaces-inside: 1
+
+ignore: |
+  node_modules/
+  .terraform/
+  build/
+  dist/
+  coverage/
+  .pre-commit-config.yaml

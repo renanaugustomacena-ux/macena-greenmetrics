@@ -1,0 +1,131 @@
+# Terraform PR plan — drift detection + cost diff + IaC scan.
+# Doctrine refs: Rule 22 (cost awareness), Rule 23 (tooling discipline), Rule 54 (policy as code), Rule 56 (automation), Rule 63 (immutable infra).
+# Mitigates: RISK-018, RISK-028.
+
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-plan.yml'
+  schedule:
+    - cron: '0 5 * * *'   # nightly drift detection
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write   # for OIDC AWS auth
+
+concurrency:
+  group: terraform-plan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  plan:
+    name: Plan + tfsec + checkov + infracost + conftest
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [staging, production]
+    defaults:
+      run:
+        working-directory: terraform
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_environment: ${{ matrix.env }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.8.5'
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/greenmetrics-github-deploy
+          aws-region: eu-south-1
+          role-session-name: tf-plan-${{ github.run_id }}-${{ matrix.env }}
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: terraform init
+        run: terraform init -backend-config="key=greenmetrics/${{ matrix.env }}/terraform.tfstate"
+
+      - name: terraform validate
+        run: terraform validate
+
+      - name: terraform plan
+        id: plan
+        run: |
+          terraform plan -no-color -out=tfplan -input=false 2>&1 | tee plan.txt
+          terraform show -json tfplan > plan.json
+
+      - name: tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with: { working_directory: terraform/ }
+        continue-on-error: true
+
+      - name: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: terraform/
+          framework: terraform
+          quiet: true
+        continue-on-error: false   # checkov is blocking from S3
+
+      - name: conftest terraform policy gate
+        run: |
+          curl -sL https://github.com/open-policy-agent/conftest/releases/latest/download/conftest_linux_x86_64.tar.gz | tar xz
+          ./conftest test --policy ../policies/conftest/terraform/ plan.json
+
+      - name: infracost diff
+        if: github.event_name == 'pull_request'
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+      - name: infracost compare
+        if: github.event_name == 'pull_request'
+        run: |
+          infracost breakdown --path . --format json --out-file infracost-${{ matrix.env }}.json
+          infracost comment github \
+            --path infracost-${{ matrix.env }}.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --pull-request "${{ github.event.pull_request.number }}" \
+            --github-token "${{ github.token }}" \
+            --behavior=update
+
+      - name: Drift detection (nightly)
+        if: github.event_name == 'schedule'
+        run: |
+          if grep -q "No changes." plan.txt; then
+            echo "No drift detected for ${{ matrix.env }}"
+          else
+            echo "DRIFT detected for ${{ matrix.env }}; opening issue"
+            gh issue create \
+              --title "Terraform drift detected (${{ matrix.env }})" \
+              --label "drift,terraform,priority-high" \
+              --body "$(head -200 plan.txt)"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Comment plan on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "<details><summary>terraform plan (${{ matrix.env }})</summary>"
+            echo
+            echo '```'
+            head -1000 plan.txt
+            echo '```'
+            echo "</details>"
+          } | gh pr comment "${{ github.event.pull_request.number }}" --body-file -

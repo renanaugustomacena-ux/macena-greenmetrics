@@ -1,0 +1,22 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: greenmetrics-cagg
+    folder: GreenMetrics
+    interval: 1m
+    rules:
+      - uid: gm-cagg-refresh-lag
+        title: TimescaleDB CAGG refresh lag > 2m
+        condition: B
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: { from: 600, to: 0 }
+            model: { expr: time() - gm_cagg_last_refresh_timestamp_seconds{view="readings_15min"}, refId: A, instant: true }
+          - refId: B
+            datasourceUid: __expr__
+            model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [120] } }], refId: B }
+        for: 5m
+        annotations:
+          runbook_url: https://github.com/greenmetrics/greenmetrics/blob/main/docs/runbooks/db-outage.md
+        labels: { severity: warning }

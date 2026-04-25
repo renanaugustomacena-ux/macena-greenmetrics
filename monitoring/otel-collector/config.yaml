@@ -1,0 +1,106 @@
+# OpenTelemetry Collector config for GreenMetrics.
+# Doctrine: Rule 18, Rule 40, Rule 58.
+# Deployed as DaemonSet via gitops/base/monitoring/otel-collector.yaml.
+
+receivers:
+
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        max_recv_msg_size_mib: 16
+      http:
+        endpoint: 0.0.0.0:4318
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: greenmetrics-backend-self
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['localhost:8888']  # collector self-metrics
+
+processors:
+
+  batch:
+    send_batch_size: 1024
+    timeout: 5s
+    send_batch_max_size: 2048
+
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+
+  resource:
+    attributes:
+      - { key: service.namespace, value: greenmetrics, action: upsert }
+      - { key: deployment.environment, from_attribute: env, action: upsert }
+
+  attributes/strip_pii:
+    actions:
+      - { key: http.request.header.authorization, action: delete }
+      - { key: http.request.header.cookie, action: delete }
+
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 100000
+    expected_new_traces_per_sec: 1000
+    policies:
+      - name: errors-keep
+        type: status_code
+        status_code: { status_codes: [ERROR] }
+      - name: slow-keep
+        type: latency
+        latency: { threshold_ms: 500 }
+      - name: probabilistic-keep
+        type: probabilistic
+        probabilistic: { sampling_percentage: 10 }   # default 10%
+
+exporters:
+
+  otlp/tempo:
+    endpoint: tempo.monitoring:4317
+    tls: { insecure: true }   # in-cluster only; mTLS planned (docs/MTLS-PLAN.md)
+
+  prometheusremotewrite/kps:
+    endpoint: http://kps-prometheus.monitoring:9090/api/v1/write
+    tls: { insecure: true }
+    resource_to_telemetry_conversion: { enabled: true }
+
+  loki:
+    endpoint: http://kps-loki-gateway.monitoring/loki/api/v1/push
+    default_labels_enabled:
+      exporter: false
+      job: true
+
+  debug:
+    verbosity: basic
+
+extensions:
+  health_check: {}
+  pprof: { endpoint: 0.0.0.0:1777 }
+  zpages: { endpoint: 0.0.0.0:55679 }
+
+service:
+  extensions: [health_check, pprof, zpages]
+  telemetry:
+    metrics: { address: 0.0.0.0:8888 }
+    logs: { level: info, encoding: json }
+
+  pipelines:
+
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, attributes/strip_pii, tail_sampling, batch]
+      exporters: [otlp/tempo]
+
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheusremotewrite/kps]
+
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, attributes/strip_pii, batch]
+      exporters: [loki]

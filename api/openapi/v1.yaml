@@ -1,0 +1,900 @@
+# GreenMetrics OpenAPI 3.1 — canonical hand-written contract.
+#
+# Doctrine refs: Rule 14 (contract first), Rule 34 (backend contract first).
+# Plan ADR: docs/adr/0013-oapi-codegen-design-first.md.
+#
+# This file is the source of truth. The Go embedded JSON in
+# `backend/internal/handlers/openapi.go` is regenerated from this YAML by
+# `make openapi-bundle` (oapi-codegen + redocly bundle).
+#
+# Versioning policy: see docs/API-VERSIONING.md (lands S3).
+# - Breaking change → bump major in URL (/api/v1 → /api/v2).
+# - Additive change → bump minor in info.version.
+# - Patch fix → bump patch in info.version.
+# - Sunset header per RFC 8594 on deprecated routes.
+#
+# Cross-portfolio invariants (from CLAUDE.md):
+# - Money: (amount_cents int64, currency ISO-4217 string) — never float.
+# - Timestamp: RFC 3339 UTC with offset.
+# - tenant_id: UUIDv4.
+# - Errors: RFC 7807 ProblemDetails.
+# - Health envelope: {status, service, version, uptime_seconds, time, dependencies}.
+
+openapi: "3.1.0"
+
+info:
+  title: GreenMetrics API
+  version: "1.0.0"
+  description: |
+    Energy monitoring + carbon accounting API for Italian energy-intensive SMEs.
+    Covers CSRD/ESRS E1, Piano Transizione 5.0 attestazione, Conto Termico 2.0,
+    Certificati Bianchi (TEE), D.Lgs. 102/2014 audit energetico.
+
+    All errors are RFC 7807 Problem Details. All timestamps are RFC 3339 UTC.
+    All `tenant_id` and `id` fields are UUIDv4. All monetary values are
+    `(amount_cents int64, currency ISO-4217 string)` — never float.
+  contact:
+    name: GreenMetrics Support
+    email: support@greenmetrics.it
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8082
+    description: Local dev (docker compose)
+  - url: https://staging.greenmetrics.it
+    description: Staging (eu-south-1)
+  - url: https://app.greenmetrics.it
+    description: Production (eu-south-1)
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        HS256-signed JWT with `kid` claim. Bearer prefix required.
+        Access token TTL: 15 min default. Refresh token TTL: 720 h default.
+        Sentinel secret rejected at boot in production.
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: |
+        RFC 9457 / Stripe-style idempotency key. Required on POST in production.
+        Stored 24h with response replay; conflict on different request hash returns 422.
+      schema:
+        type: string
+        format: uuid
+
+    PageLimit:
+      name: limit
+      in: query
+      description: Maximum number of items per page (default 50, max 500).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+        default: 50
+
+    PageOffset:
+      name: offset
+      in: query
+      description: Page offset.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    PathID:
+      name: id
+      in: path
+      required: true
+      description: Resource identifier (UUIDv4).
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+
+    Problem:
+      type: object
+      description: RFC 7807 Problem Details.
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: A URI reference identifying the problem type.
+          example: "https://greenmetrics.it/problems/validation-error"
+        title:
+          type: string
+          description: Short, human-readable summary.
+          example: "Validation error"
+        status:
+          type: integer
+          minimum: 100
+          maximum: 599
+          description: HTTP status code.
+          example: 422
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence.
+        instance:
+          type: string
+          format: uri-reference
+          description: URI reference identifying the specific occurrence.
+        code:
+          type: string
+          description: Machine-readable error code (project-specific).
+          example: "EMAIL_INVALID"
+
+    Money:
+      type: object
+      description: Money — amount in cents + ISO-4217 currency code. Never float.
+      required: [amount_cents, currency]
+      properties:
+        amount_cents:
+          type: integer
+          format: int64
+          description: Amount in the smallest currency unit (cents for EUR).
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: ISO-4217 currency code.
+          example: "EUR"
+
+    Timestamp:
+      type: string
+      format: date-time
+      description: RFC 3339 timestamp in UTC with offset (Z).
+      example: "2026-04-25T12:34:56Z"
+
+    TenantID:
+      type: string
+      format: uuid
+      description: UUIDv4 tenant identifier; stable across the portfolio.
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        password:
+          type: string
+          minLength: 12
+          maxLength: 256
+          description: NIST SP 800-63B compliant — length-based, no mandatory composition.
+
+    LoginResponse:
+      type: object
+      required: [access_token, refresh_token, expires_in, token_type]
+      properties:
+        access_token:
+          type: string
+          description: HS256-signed JWT with `kid` claim.
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          description: Access token TTL in seconds.
+        token_type:
+          type: string
+          enum: [Bearer]
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    Reading:
+      type: object
+      required: [ts, meter_id, channel_id, value, unit]
+      properties:
+        ts:
+          $ref: "#/components/schemas/Timestamp"
+        meter_id:
+          type: string
+          format: uuid
+        channel_id:
+          type: string
+          format: uuid
+        value:
+          type: number
+          format: double
+          description: Measured value (units of `unit`). Never used for monetary amounts — see Money schema.
+        unit:
+          type: string
+          description: ISO unit code (e.g. "kWh", "m3", "W", "kvar").
+        quality_code:
+          type: integer
+          description: Quality indicator (0=ok, 1=interpolated, 2=substituted, 3=questionable, 4=missing).
+        ingest_seq:
+          type: integer
+          format: int64
+          description: Server-assigned per-meter ordering sequence.
+
+    ReadingsBatch:
+      type: object
+      required: [meter_id, readings]
+      properties:
+        meter_id:
+          type: string
+          format: uuid
+        readings:
+          type: array
+          minItems: 1
+          maxItems: 5000
+          items:
+            $ref: "#/components/schemas/Reading"
+
+    AggregatedReading:
+      type: object
+      properties:
+        bucket_start:
+          $ref: "#/components/schemas/Timestamp"
+        bucket_end:
+          $ref: "#/components/schemas/Timestamp"
+        meter_id:
+          type: string
+          format: uuid
+        channel_id:
+          type: string
+          format: uuid
+        value_avg:
+          type: number
+        value_sum:
+          type: number
+        value_min:
+          type: number
+        value_max:
+          type: number
+        sample_count:
+          type: integer
+
+    Meter:
+      type: object
+      required: [id, label, meter_type, protocol, unit]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          $ref: "#/components/schemas/TenantID"
+        label:
+          type: string
+        meter_type:
+          type: string
+          enum: [electricity, gas, water, thermal, photovoltaic, ev_charger, pulse]
+        protocol:
+          type: string
+          enum: [modbus_tcp, modbus_rtu, mbus, sunspec, ocpp, pulse, spd, manual]
+        unit:
+          type: string
+        site:
+          type: string
+        cost_centre:
+          type: string
+        serial_no:
+          type: string
+        pod_code:
+          type: string
+          pattern: '^IT001E[0-9A-Z]{8}$'
+          description: Italian POD electricity supply code.
+        pdr_code:
+          type: string
+          description: Italian PDR gas supply code (14 digits).
+        endpoint:
+          type: string
+        slave_addr:
+          type: integer
+        active:
+          type: boolean
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+
+    Report:
+      type: object
+      required: [id, type, period_from, period_to, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          $ref: "#/components/schemas/TenantID"
+        type:
+          type: string
+          enum: [esrs_e1, piano_5_0, conto_termico, tee, audit_dlgs102, monthly_consumption, co2_footprint]
+        period_from:
+          $ref: "#/components/schemas/Timestamp"
+        period_to:
+          $ref: "#/components/schemas/Timestamp"
+        status:
+          type: string
+          enum: [queued, running, succeeded, failed, draft, submitted, approved]
+        file_url:
+          type: string
+          format: uri
+        generated_by:
+          type: string
+        data_freshness:
+          type: string
+          description: e.g. "live", "cached_2h" — flag when ISPRA/Terna fallback was used.
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+
+    JobStatus:
+      type: object
+      required: [id, type, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          example: "report:esrs_e1"
+        status:
+          type: string
+          enum: [queued, running, succeeded, failed, retry, dead]
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+        progress_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        result_url:
+          type: string
+          format: uri
+        error:
+          $ref: "#/components/schemas/Problem"
+
+    Alert:
+      type: object
+      required: [id, meter_id, type, severity, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          $ref: "#/components/schemas/TenantID"
+        meter_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        message:
+          type: string
+        status:
+          type: string
+          enum: [open, acknowledged, resolved]
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+
+    EmissionFactor:
+      type: object
+      required: [code, scope, year, value, unit, source]
+      properties:
+        code:
+          type: string
+          example: "ITALY_GRID_2024"
+        description:
+          type: string
+        scope:
+          type: integer
+          enum: [1, 2, 3]
+        year:
+          type: integer
+          minimum: 2000
+          maximum: 2100
+        value:
+          type: number
+          description: kgCO2e per unit.
+        unit:
+          type: string
+          example: "kWh"
+        source:
+          type: string
+          enum: [ISPRA, Terna, AIB, GHG_Protocol, EcoInvent, custom]
+        valid_from:
+          $ref: "#/components/schemas/Timestamp"
+        valid_to:
+          $ref: "#/components/schemas/Timestamp"
+
+    HealthResponse:
+      type: object
+      description: Cross-portfolio canonical health envelope (CLAUDE.md invariant).
+      required: [status, service, version, uptime_seconds, time, dependencies]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, error]
+        service:
+          type: string
+          example: "greenmetrics-backend"
+        version:
+          type: string
+        uptime_seconds:
+          type: integer
+        time:
+          $ref: "#/components/schemas/Timestamp"
+        dependencies:
+          type: object
+          additionalProperties:
+            type: object
+            required: [status, latency_ms]
+            properties:
+              status:
+                type: string
+                enum: [ok, degraded, error]
+              latency_ms:
+                type: integer
+              detail:
+                type: string
+
+  responses:
+    Problem400:
+      description: Bad Request (validation failure, malformed body).
+      content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } }
+    Problem401:
+      description: Unauthorized (missing or invalid token).
+      content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } }
+    Problem403:
+      description: Forbidden (RBAC permission denied).
+      content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } }
+    Problem404:
+      description: Not Found.
+      content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } }
+    Problem409:
+      description: Conflict.
+      content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } }
+    Problem413:
+      description: Payload Too Large.
+      content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } }
+    Problem422:
+      description: Unprocessable Entity (idempotency conflict, semantic validation).
+      content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } }
+    Problem429:
+      description: Too Many Requests (rate limit, account lockout).
+      content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } }
+    Problem500:
+      description: Internal Server Error.
+      content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } }
+    Problem503:
+      description: Service Unavailable (backpressure, dependency degraded).
+      content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } }
+
+paths:
+
+  /api/health:
+    get:
+      summary: Health + dependency status (degraded-tolerant)
+      operationId: getHealth
+      tags: [Health]
+      responses:
+        "200":
+          description: Service is up; dependencies may be degraded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+
+  /api/ready:
+    get:
+      summary: Readiness probe (strict — fails on dependency outage)
+      operationId: getReady
+      tags: [Health]
+      responses:
+        "200": { description: Ready to serve traffic. }
+        "503": { $ref: "#/components/responses/Problem503" }
+
+  /api/live:
+    get:
+      summary: Liveness probe (always 200 once boot complete)
+      operationId: getLive
+      tags: [Health]
+      responses:
+        "200": { description: Process alive. }
+
+  /api/internal/metrics:
+    get:
+      summary: Prometheus scrape endpoint
+      operationId: getMetrics
+      tags: [Observability]
+      responses:
+        "200":
+          description: text/plain Prometheus exposition.
+          content: { text/plain: {} }
+
+  /api/v1/auth/login:
+    post:
+      summary: Issue access + refresh JWT
+      operationId: login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Access + refresh tokens issued.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "400": { $ref: "#/components/responses/Problem400" }
+        "401": { $ref: "#/components/responses/Problem401" }
+        "429": { $ref: "#/components/responses/Problem429" }
+
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh access token
+      operationId: refresh
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RefreshRequest" }
+      responses:
+        "200":
+          description: New access token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  expires_in: { type: integer }
+                  token_type: { type: string, enum: [Bearer] }
+        "401": { $ref: "#/components/responses/Problem401" }
+
+  /api/v1/auth/logout:
+    post:
+      summary: Logout (client-side; stateless JWT)
+      operationId: logout
+      tags: [Auth]
+      security: [{ BearerAuth: [] }]
+      responses:
+        "204": { description: No content. }
+
+  /api/v1/meters:
+    get:
+      summary: List meters (per-tenant)
+      operationId: listMeters
+      tags: [Meters]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/PageLimit"
+        - $ref: "#/components/parameters/PageOffset"
+      responses:
+        "200":
+          description: Meter list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Meter" }
+        "401": { $ref: "#/components/responses/Problem401" }
+    post:
+      summary: Create meter
+      operationId: createMeter
+      tags: [Meters]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Meter" }
+      responses:
+        "201":
+          description: Meter created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Meter" }
+        "400": { $ref: "#/components/responses/Problem400" }
+        "401": { $ref: "#/components/responses/Problem401" }
+        "403": { $ref: "#/components/responses/Problem403" }
+        "422": { $ref: "#/components/responses/Problem422" }
+
+  /api/v1/meters/{id}:
+    parameters: [{ $ref: "#/components/parameters/PathID" }]
+    get:
+      summary: Get meter
+      operationId: getMeter
+      tags: [Meters]
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200":
+          description: Meter.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Meter" }
+        "404": { $ref: "#/components/responses/Problem404" }
+    put:
+      summary: Update meter
+      operationId: updateMeter
+      tags: [Meters]
+      security: [{ BearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Meter" }
+      responses:
+        "200": { description: Updated. }
+        "404": { $ref: "#/components/responses/Problem404" }
+    delete:
+      summary: Delete meter
+      operationId: deleteMeter
+      tags: [Meters]
+      security: [{ BearerAuth: [] }]
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/Problem404" }
+
+  /api/v1/readings:
+    get:
+      summary: Query raw readings (per-tenant, time-windowed)
+      operationId: getReadings
+      tags: [Readings]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: meter_id, in: query, schema: { type: string, format: uuid } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - $ref: "#/components/parameters/PageLimit"
+      responses:
+        "200":
+          description: Readings.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Reading" } }
+
+  /api/v1/readings/ingest:
+    post:
+      summary: Bulk ingest readings (CopyFrom into hypertable)
+      operationId: ingestReadings
+      tags: [Readings]
+      security: [{ BearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReadingsBatch" }
+      responses:
+        "202":
+          description: Accepted. Up to 5 000 readings per batch; larger batches return 413.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted_count: { type: integer }
+                  duplicate_count: { type: integer, description: "Readings deduplicated by (tenant, meter, channel, ts) unique index." }
+                  ingest_seq_max: { type: integer, format: int64 }
+        "400": { $ref: "#/components/responses/Problem400" }
+        "401": { $ref: "#/components/responses/Problem401" }
+        "413": { $ref: "#/components/responses/Problem413" }
+        "503": { $ref: "#/components/responses/Problem503" }
+
+  /api/v1/readings/aggregated:
+    get:
+      summary: Continuous-aggregate slice (15m / 1h / 1d)
+      operationId: getAggregatedReadings
+      tags: [Readings]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: meter_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: bucket, in: query, required: true, schema: { type: string, enum: [15m, 1h, 1d] } }
+      responses:
+        "200":
+          description: Aggregated readings.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/AggregatedReading" } }
+
+  /api/v1/readings/export:
+    get:
+      summary: Streaming CSV export
+      operationId: exportReadings
+      tags: [Readings]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: meter_id, in: query, schema: { type: string, format: uuid } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: CSV stream.
+          content: { text/csv: {} }
+
+  /api/v1/reports:
+    get:
+      summary: List reports (per-tenant)
+      operationId: listReports
+      tags: [Reports]
+      security: [{ BearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/PageLimit" }, { $ref: "#/components/parameters/PageOffset" }]
+      responses:
+        "200":
+          description: Reports.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Report" } }
+    post:
+      summary: Generate report (async; returns 202 + Location)
+      operationId: generateReport
+      tags: [Reports]
+      security: [{ BearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, period_from, period_to]
+              properties:
+                type: { type: string, enum: [esrs_e1, piano_5_0, conto_termico, tee, audit_dlgs102, monthly_consumption, co2_footprint] }
+                period_from: { $ref: "#/components/schemas/Timestamp" }
+                period_to: { $ref: "#/components/schemas/Timestamp" }
+      responses:
+        "202":
+          description: Job enqueued. Poll GET /api/v1/jobs/{id}.
+          headers:
+            Location:
+              description: URL of the job status resource.
+              schema: { type: string, format: uri-reference }
+              example: "/api/v1/jobs/123e4567-e89b-12d3-a456-426614174000"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id: { type: string, format: uuid }
+                  status: { type: string, enum: [queued] }
+
+  /api/v1/reports/{id}:
+    parameters: [{ $ref: "#/components/parameters/PathID" }]
+    get:
+      summary: Get report metadata
+      operationId: getReport
+      tags: [Reports]
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200":
+          description: Report.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Report" }
+
+  /api/v1/jobs/{id}:
+    parameters: [{ $ref: "#/components/parameters/PathID" }]
+    get:
+      summary: Get async job status
+      operationId: getJob
+      tags: [Jobs]
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200":
+          description: Job status.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JobStatus" }
+        "404": { $ref: "#/components/responses/Problem404" }
+
+  /api/v1/alerts:
+    get:
+      summary: List alerts (per-tenant)
+      operationId: listAlerts
+      tags: [Alerts]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [open, acknowledged, resolved] } }
+        - $ref: "#/components/parameters/PageLimit"
+      responses:
+        "200":
+          description: Alerts.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Alert" } }
+
+  /api/v1/emission-factors:
+    get:
+      summary: List emission factors (per-source, per-year)
+      operationId: listEmissionFactors
+      tags: [EmissionFactors]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: source, in: query, schema: { type: string, enum: [ISPRA, Terna, AIB, GHG_Protocol, EcoInvent, custom] } }
+        - { name: year, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: Factors.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/EmissionFactor" } }
+    post:
+      summary: Create emission factor (admin only)
+      operationId: createEmissionFactor
+      tags: [EmissionFactors]
+      security: [{ BearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EmissionFactor" }
+      responses:
+        "201": { description: Created. }
+        "403": { $ref: "#/components/responses/Problem403" }
+
+  /api/v1/pulse/ingest:
+    post:
+      summary: Pulse-counter webhook (HMAC-SHA256 signed)
+      operationId: ingestPulse
+      tags: [Pulse]
+      parameters:
+        - { name: X-Pulse-Signature, in: header, required: true, schema: { type: string }, description: "HMAC-SHA256(body, PULSE_WEBHOOK_SECRET); compared constant-time." }
+        - { name: X-Pulse-Timestamp, in: header, required: true, schema: { type: string, format: date-time }, description: "Replay window 5 min." }
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meter_id, pulses]
+              properties:
+                meter_id: { type: string, format: uuid }
+                pulses:
+                  type: array
+                  items:
+                    type: object
+                    required: [ts, count]
+                    properties:
+                      ts: { $ref: "#/components/schemas/Timestamp" }
+                      count: { type: integer, minimum: 0 }
+      responses:
+        "202": { description: Accepted. }
+        "401": { $ref: "#/components/responses/Problem401" }
+        "413": { $ref: "#/components/responses/Problem413" }
+
+tags:
+  - { name: Health, description: "Liveness, readiness, dependency status." }
+  - { name: Observability, description: "Prometheus scrape." }
+  - { name: Auth, description: "JWT issuance + refresh." }
+  - { name: Meters, description: "Meter inventory CRUD." }
+  - { name: Readings, description: "Raw + aggregated meter data." }
+  - { name: Reports, description: "Async CSRD / Piano 5.0 / audit reports." }
+  - { name: Jobs, description: "Async job status (Asynq)." }
+  - { name: Alerts, description: "Threshold + anomaly alerts." }
+  - { name: EmissionFactors, description: "ISPRA / Terna / AIB factor catalogue." }
+  - { name: Pulse, description: "HMAC-signed pulse-counter webhook." }

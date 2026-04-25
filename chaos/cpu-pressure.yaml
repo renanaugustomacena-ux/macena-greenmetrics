@@ -1,0 +1,14 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: api-cpu-stress
+  namespace: greenmetrics-staging
+  annotations: { chaos.greenmetrics.it/experiment: CE-04, chaos.greenmetrics.it/runbook: capacity-spike }
+spec:
+  mode: one
+  selector:
+    namespaces: [greenmetrics-staging]
+    labelSelectors: { app: greenmetrics-backend }
+  stressors:
+    cpu: { workers: 4, load: 90 }
+  duration: 5m

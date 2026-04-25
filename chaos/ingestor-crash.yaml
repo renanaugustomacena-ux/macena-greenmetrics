@@ -1,0 +1,13 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: simulator-crash
+  namespace: greenmetrics-staging
+  annotations: { chaos.greenmetrics.it/experiment: CE-03, chaos.greenmetrics.it/runbook: ingestor-crash-loop }
+spec:
+  action: pod-failure
+  mode: all
+  selector:
+    namespaces: [greenmetrics-staging]
+    labelSelectors: { app: greenmetrics-simulator }
+  duration: 5m

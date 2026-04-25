@@ -1,0 +1,78 @@
+{
+  "name": "GreenMetrics dev",
+  "image": "mcr.microsoft.com/devcontainers/go:1.26-bookworm",
+  "remoteUser": "vscode",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" },
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.12" },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": { "kubectl": "latest", "helm": "latest" },
+    "ghcr.io/devcontainers/features/terraform:1": { "version": "1.8.5", "tflint": "latest", "terragrunt": "latest" },
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/common-utils:2": { "configureZshAsDefaultShell": true }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "svelte.svelte-vscode",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "redhat.vscode-yaml",
+        "hashicorp.terraform",
+        "hashicorp.hcl",
+        "ms-azuretools.vscode-docker",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "exiasr.hadolint",
+        "DavidAnson.vscode-markdownlint",
+        "tamasfe.even-better-toml",
+        "tomoki1207.pdf",
+        "redhat.vscode-openshift-connector",
+        "github.vscode-github-actions",
+        "redhat.vscode-extension-redhat-account",
+        "ms-vsliveshare.vsliveshare",
+        "github.codespaces"
+      ],
+      "settings": {
+        "go.toolsManagement.checkForUpdates": "local",
+        "go.useLanguageServer": true,
+        "go.lintTool": "golangci-lint",
+        "go.lintFlags": ["--fast"],
+        "go.testTimeout": "120s",
+        "editor.formatOnSave": true,
+        "[go]": { "editor.defaultFormatter": "golang.go" },
+        "[svelte]": { "editor.defaultFormatter": "svelte.svelte-vscode" },
+        "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+        "[yaml]": { "editor.defaultFormatter": "redhat.vscode-yaml" },
+        "[markdown]": { "editor.defaultFormatter": "DavidAnson.vscode-markdownlint" },
+        "files.eol": "\n",
+        "files.insertFinalNewline": true,
+        "files.trimTrailingWhitespace": true
+      }
+    }
+  },
+
+  "forwardPorts": [3005, 3011, 5439, 8082],
+  "portsAttributes": {
+    "3005": { "label": "Frontend (SvelteKit)" },
+    "3011": { "label": "Grafana" },
+    "5439": { "label": "TimescaleDB" },
+    "8082": { "label": "Backend (Fiber)" }
+  },
+
+  "mounts": [
+    "source=greenmetrics-go-cache,target=/go/pkg,type=volume",
+    "source=greenmetrics-node-cache,target=/home/vscode/.npm,type=volume"
+  ],
+
+  "containerEnv": {
+    "TZ": "Europe/Rome",
+    "GOFLAGS": "-mod=mod"
+  }
+}

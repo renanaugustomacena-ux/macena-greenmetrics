@@ -1,0 +1,211 @@
+# Source of truth for the GreenMetrics layer model.
+# Render to docs/LAYERS.md via `make layers-doc` (Mermaid diagram generation).
+# Doctrine: Rule 10 (multi-layer system).
+
+layers:
+
+  - id: 1
+    name: Infrastructure
+    owners:
+      - "@greenmetrics/platform-team"
+      - "@greenmetrics/secops"
+    artefacts:
+      - terraform/modules/vpc
+      - terraform/modules/eks
+      - terraform/modules/rds-timescale
+      - terraform/modules/s3
+      - terraform/modules/secrets
+      - terraform/modules/cloudfront-waf
+      - terraform/modules/iam-irsa
+      - terraform/modules/iam-breakglass
+      - terraform/modules/github-oidc
+      - terraform/modules/cost
+      - terraform/bootstrap
+    state: skeleton; state backend commented in terraform/versions.tf:21-27
+    gap_closed_by:
+      - sprint: S2
+        rules: [14, 22, 23, 63]
+
+  - id: 2
+    name: Platform services
+    owners:
+      - "@greenmetrics/platform-team"
+      - "@greenmetrics/secops"
+      - "@greenmetrics/sre"
+    artefacts:
+      - k8s/
+      - gitops/argocd/
+      - gitops/base/external-secrets/
+      - gitops/base/falco/
+      - gitops/base/monitoring/
+      - monitoring/prometheus/
+      - monitoring/alertmanager/
+      - monitoring/otel-collector/
+      - monitoring/loki/
+      - grafana/provisioning/
+      - grafana/alerting/
+      - policies/kyverno/
+    state: K8s manifests production-grade; monitoring/ empty; 0 Grafana alert rules; ESO commented
+    gap_closed_by:
+      - sprint: S2
+        rules: [14, 17, 22, 23, 54]
+      - sprint: S3
+        rules: [19, 39, 53, 54, 57, 62]
+      - sprint: S4
+        rules: [15, 18, 20, 36, 50, 56, 58, 59, 63]
+
+  - id: 3
+    name: Application
+    owners:
+      - "@greenmetrics/app-team"
+    artefacts:
+      - backend/cmd/server
+      - backend/cmd/worker
+      - backend/cmd/migrate
+      - backend/cmd/oapi-gen
+      - backend/cmd/simulator
+      - backend/internal/handlers
+      - backend/internal/services
+      - backend/internal/repository
+      - backend/internal/domain
+      - backend/internal/api/v1
+      - backend/internal/security
+      - backend/internal/resilience
+      - backend/internal/observability
+      - backend/internal/metrics
+      - backend/internal/jobs
+      - backend/internal/featureflags
+      - backend/migrations
+      - frontend/
+    state: 3-tier backend running; ~8 tests; no DDD split; no validator; no async jobs
+    gap_closed_by:
+      - sprint: S2
+        rules: [32, 33, 34, 43]
+      - sprint: S3
+        rules: [30, 35, 39, 46]
+      - sprint: S4
+        rules: [36, 37, 38, 40, 41, 42]
+      - sprint: S5
+        rules: [44, 45]
+
+  - id: 4
+    name: Tooling
+    owners:
+      - "@greenmetrics/platform-team"
+      - "@greenmetrics/secops"
+    artefacts:
+      - .github/workflows/
+      - .github/dependabot.yml
+      - .github/CODEOWNERS
+      - .github/PULL_REQUEST_TEMPLATE.md
+      - .pre-commit-config.yaml
+      - .devcontainer/
+      - policies/conftest/
+      - policies/falco/
+      - api/openapi/
+      - chaos/
+      - dast/
+      - scripts/
+      - Taskfile.yaml
+    state: CI exists with SAST + secret + dep scan + SBOM; CD is placeholder; no policy gate; no Cosign
+    gap_closed_by:
+      - sprint: S1
+        rules: [9, 23, 52, 53]
+      - sprint: S2
+        rules: [14, 17, 23, 54]
+      - sprint: S3
+        rules: [53, 54, 56]
+      - sprint: S4
+        rules: [50, 56, 63]
+      - sprint: S5
+        rules: [64]
+
+  - id: 5
+    name: Operators
+    owners:
+      - "@greenmetrics/sre"
+      - "@greenmetrics/secops"
+      - "@greenmetrics/platform-team"
+    artefacts:
+      - docs/RUNBOOK.md
+      - docs/runbooks/
+      - docs/INCIDENT-RESPONSE.md
+      - docs/ON-CALL.md
+      - docs/ROLLBACK.md
+      - docs/SLO.md
+      - docs/SLI-CATALOG.md
+      - docs/CHAOS-PLAN.md
+      - docs/CHAOS-LOG.md
+      - docs/RELIABILITY-MODEL.md
+      - docs/PENTEST-CADENCE.md
+      - docs/THREAT-MODEL.md
+      - docs/RISK-REGISTER.md
+      - docs/PLATFORM-PLAYBOOK.md
+      - docs/COMPLIANCE/
+      - docs/adr/
+      - docs/decisions/
+      - docs/backend/decisions/
+      - docs/office-hours/
+    state: RUNBOOK exists; no per-failure runbooks; no IR doc
+    gap_closed_by:
+      - sprint: S1
+        rules: [9, 11, 27, 49, 55, 61]
+      - sprint: S4
+        rules: [20]
+      - sprint: S5
+        rules: [25, 28, 48, 60, 64, 67, 68]
+
+crossings:
+
+  - from: app
+    to: platform
+    contract: K8s envFrom (ConfigMap + Secret)
+    source_of_truth: k8s/configmap.yaml, k8s/secret.yaml
+  - from: app
+    to: platform
+    contract: OTLP gRPC trace export
+    source_of_truth: OTEL_EXPORTER_OTLP_ENDPOINT
+  - from: app
+    to: platform
+    contract: Prometheus /metrics exposition
+    source_of_truth: backend/internal/metrics/metrics.go
+  - from: app
+    to: platform
+    contract: zap JSON stdout for Promtail/Loki
+    source_of_truth: backend/cmd/server/main.go zap config
+  - from: platform
+    to: infra
+    contract: ESO ClusterSecretStore → AWS Secrets Manager
+    source_of_truth: gitops/base/external-secrets/clustersecretstore.yaml
+  - from: platform
+    to: infra
+    contract: ServiceAccount IRSA annotation → IAM role
+    source_of_truth: k8s/service.yaml, terraform/modules/iam-irsa
+  - from: platform
+    to: infra
+    contract: pgx connection string → RDS
+    source_of_truth: DATABASE_URL via ESO
+  - from: tooling
+    to: app
+    contract: oapi-codegen-generated request/response types
+    source_of_truth: api/openapi/v1.yaml
+  - from: tooling
+    to: platform
+    contract: Argo CD Application manifest
+    source_of_truth: gitops/argocd/applications/
+  - from: tooling
+    to: tooling
+    contract: conftest Rego rules
+    source_of_truth: policies/conftest/
+  - from: tooling
+    to: platform
+    contract: Kyverno ClusterPolicy admission
+    source_of_truth: policies/kyverno/
+  - from: operators
+    to: all
+    contract: runbook YAML front-matter
+    source_of_truth: docs/runbooks/*.md
+  - from: operators
+    to: all
+    contract: ADR four-part Tradeoff stanza
+    source_of_truth: docs/adr/*.md

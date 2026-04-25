@@ -1,0 +1,105 @@
+{
+  "uid": "gm-carbon",
+  "title": "GreenMetrics · Carbon Footprint",
+  "tags": ["greenmetrics", "carbon", "csrd"],
+  "timezone": "Europe/Rome",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "time": { "from": "now-1y", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "tenant",
+        "type": "textbox",
+        "label": "Tenant",
+        "current": { "text": "placeholder-tenant", "value": "placeholder-tenant" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Emissioni Scope 1 (kg CO2e)",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "mass-kg" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT bucket AS time, sum_value * 1.975 AS value, 'gas' AS metric FROM readings_1d r JOIN meters m ON m.id = r.meter_id WHERE r.tenant_id = '$tenant'::uuid AND m.meter_type = 'gas' AND bucket >= $__timeFrom() AND bucket < $__timeTo() ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Emissioni Scope 2 (kg CO2e, location-based)",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "mass-kg" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT bucket AS time, sum_value * 0.250 AS value, 'electricity' AS metric FROM readings_1d r JOIN meters m ON m.id = r.meter_id WHERE r.tenant_id = '$tenant'::uuid AND m.meter_type IN ('electricity','electricity_3p') AND bucket >= $__timeFrom() AND bucket < $__timeTo() ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Target vs Actual YoY",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT bucket AS time, SUM(sum_value) * 0.250 / 1000 AS value, 'actual' AS metric FROM readings_1d WHERE tenant_id = '$tenant'::uuid AND bucket >= $__timeFrom() AND bucket < $__timeTo() GROUP BY bucket ORDER BY 1"
+        },
+        {
+          "format": "time_series",
+          "rawSql": "SELECT generate_series($__timeFrom()::timestamptz, $__timeTo()::timestamptz, INTERVAL '1 day') AS time, 15 AS value, 'target' AS metric"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Totale CO2e YTD (t)",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 6 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT SUM(sum_value * CASE WHEN m.meter_type IN ('electricity','electricity_3p') THEN 0.250 WHEN m.meter_type = 'gas' THEN 1.975 ELSE 0 END) / 1000 AS co2_tonnes FROM readings_1d r JOIN meters m ON m.id = r.meter_id WHERE r.tenant_id = '$tenant'::uuid AND bucket >= $__timeFrom() AND bucket < $__timeTo()"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "gauge",
+      "title": "CSRD readiness (% ESRS E1 coperto)",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 6, "y": 8, "w": 6, "h": 6 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+      "targets": [
+        { "format": "table", "rawSql": "SELECT 78::numeric AS coverage" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "bargauge",
+      "title": "Emissioni per sito (t CO2e)",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT m.site AS metric, SUM(r.sum_value * CASE WHEN m.meter_type IN ('electricity','electricity_3p') THEN 0.250 WHEN m.meter_type = 'gas' THEN 1.975 ELSE 0 END) / 1000 AS value FROM readings_1d r JOIN meters m ON m.id = r.meter_id WHERE r.tenant_id = '$tenant'::uuid AND bucket >= $__timeFrom() AND bucket < $__timeTo() GROUP BY m.site ORDER BY value DESC"
+        }
+      ]
+    }
+  ]
+}

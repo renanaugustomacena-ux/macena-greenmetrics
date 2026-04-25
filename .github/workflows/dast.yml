@@ -1,0 +1,81 @@
+# Weekly DAST against staging.
+# Doctrine refs: Rule 53, Rule 64, Rule 65.
+# Findings → Slack #secops + GitHub issue with `dast` label.
+
+name: DAST
+
+on:
+  schedule:
+    - cron: '0 3 * * 6'   # Saturday 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target base URL (default: staging)'
+        required: false
+        default: 'https://staging.greenmetrics.it'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: dast
+  cancel-in-progress: false
+
+jobs:
+
+  nuclei:
+    name: nuclei (CVE + vuln + default-login + exposure templates)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: projectdiscovery/nuclei-action@v3
+        with:
+          target: ${{ inputs.target || 'https://staging.greenmetrics.it' }}
+          templates: |
+            cves/2024
+            cves/2025
+            cves/2026
+            vulnerabilities
+            default-logins
+            exposures
+            misconfiguration
+          output: nuclei.txt
+          flags: -severity critical,high -timeout 10 -retries 1 -rl 5 -irr -duc -nc
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: nuclei-report, path: nuclei.txt, retention-days: 90 }
+
+      - name: Open issue on findings
+        if: failure()
+        env: { GH_TOKEN: ${{ github.token }} }
+        run: |
+          gh issue create \
+            --title "DAST nuclei findings $(date -u +%Y-%m-%d)" \
+            --label "dast,security,priority-high" \
+            --body "Weekly nuclei sweep returned findings against ${{ inputs.target || 'staging' }}.\n\nReport artifact attached to run ${{ github.run_id }}.\n\nTriage per docs/PENTEST-CADENCE.md §3."
+
+  zap-baseline:
+    name: ZAP baseline (passive scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: zaproxy/action-baseline@v0.13.0
+        with:
+          target: ${{ inputs.target || 'https://staging.greenmetrics.it' }}
+          rules_file_name: dast/zap-rules.tsv
+          fail_action: true
+          allow_issue_writing: false   # we open the issue ourselves above
+
+      - name: Open issue on findings
+        if: failure()
+        env: { GH_TOKEN: ${{ github.token }} }
+        run: |
+          gh issue create \
+            --title "DAST ZAP baseline findings $(date -u +%Y-%m-%d)" \
+            --label "dast,security,priority-high" \
+            --body "Weekly ZAP baseline sweep returned findings against ${{ inputs.target || 'staging' }}.\n\nTriage per docs/PENTEST-CADENCE.md §3."

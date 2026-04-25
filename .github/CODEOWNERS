@@ -1,0 +1,76 @@
+# GreenMetrics CODEOWNERS — see docs/RACI.md and docs/TEAM-CHARTER.md.
+# Lines matched later override earlier ones; most-specific path wins.
+
+# Default fallback — everything routes to repo owner unless overridden.
+*                                       @ciupsciups
+
+# Backend application code.
+/backend/internal/handlers/             @greenmetrics/app-team
+/backend/internal/services/             @greenmetrics/app-team @greenmetrics/platform-team
+/backend/internal/repository/           @greenmetrics/platform-team @greenmetrics/data-team
+/backend/internal/domain/               @greenmetrics/app-team @greenmetrics/platform-team
+/backend/internal/security/             @greenmetrics/secops @greenmetrics/platform-team
+/backend/internal/resilience/           @greenmetrics/platform-team
+/backend/internal/api/                  @greenmetrics/platform-team
+/backend/internal/observability/        @greenmetrics/sre @greenmetrics/platform-team
+/backend/internal/metrics/              @greenmetrics/sre @greenmetrics/platform-team
+/backend/internal/jobs/                 @greenmetrics/platform-team
+/backend/migrations/                    @greenmetrics/data-team @greenmetrics/platform-team
+/backend/cmd/                           @greenmetrics/platform-team
+/backend/Dockerfile*                    @greenmetrics/secops @greenmetrics/platform-team
+
+# Frontend.
+/frontend/                              @greenmetrics/app-team
+/frontend/Dockerfile*                   @greenmetrics/secops @greenmetrics/platform-team
+
+# Landing.
+/landing-page/                          @greenmetrics/app-team
+
+# Platform substrate.
+/k8s/                                   @greenmetrics/platform-team @greenmetrics/secops
+/gitops/                                @greenmetrics/platform-team @greenmetrics/secops
+/terraform/                             @greenmetrics/platform-team @greenmetrics/secops
+/grafana/                               @greenmetrics/sre @greenmetrics/platform-team
+/monitoring/                            @greenmetrics/sre @greenmetrics/platform-team
+/policies/                              @greenmetrics/secops
+/chaos/                                 @greenmetrics/sre @greenmetrics/secops
+/dast/                                  @greenmetrics/secops
+
+# CI/CD + automation.
+/.github/                               @greenmetrics/platform-team @greenmetrics/secops
+/.github/workflows/                     @greenmetrics/platform-team @greenmetrics/secops
+/.github/CODEOWNERS                     @greenmetrics/platform-team @greenmetrics/secops
+/.pre-commit-config.yaml                @greenmetrics/platform-team @greenmetrics/secops
+/.gitleaks.toml                         @greenmetrics/secops
+
+# Contracts.
+/api/openapi/                           @greenmetrics/platform-team @greenmetrics/app-team
+/docs/contracts/                        @greenmetrics/platform-team @greenmetrics/secops
+
+# Documentation surfaces with security/regulatory weight.
+/docs/THREAT-MODEL.md                   @greenmetrics/secops
+/docs/RISK-REGISTER.md                  @greenmetrics/secops
+/docs/INCIDENT-RESPONSE.md              @greenmetrics/secops @greenmetrics/sre
+/docs/SECURITY.md                       @greenmetrics/secops
+/docs/SECOPS-CHARTER.md                 @greenmetrics/secops
+/docs/SECOPS-RUNBOOK.md                 @greenmetrics/secops
+/docs/SUPPLY-CHAIN.md                   @greenmetrics/secops
+/docs/JWT-ROTATION.md                   @greenmetrics/secops
+/docs/MTLS-PLAN.md                      @greenmetrics/secops
+/docs/ITALIAN-COMPLIANCE.md             @greenmetrics/secops @greenmetrics/legal
+/docs/COMPLIANCE/                       @greenmetrics/secops @greenmetrics/legal
+/docs/PENTEST-CADENCE.md                @greenmetrics/secops
+/docs/RELIABILITY-MODEL.md              @greenmetrics/sre @greenmetrics/platform-team
+/docs/CHAOS-PLAN.md                     @greenmetrics/sre @greenmetrics/platform-team
+/docs/CHAOS-LOG.md                      @greenmetrics/sre @greenmetrics/platform-team
+/docs/SLO.md                            @greenmetrics/sre @greenmetrics/platform-team
+/docs/SLI-CATALOG.md                    @greenmetrics/sre @greenmetrics/platform-team
+/docs/RUNBOOK.md                        @greenmetrics/sre @greenmetrics/platform-team
+/docs/runbooks/                         @greenmetrics/sre @greenmetrics/platform-team
+/docs/ON-CALL.md                        @greenmetrics/sre
+/docs/ROLLBACK.md                       @greenmetrics/sre @greenmetrics/platform-team
+
+# ADRs require platform team review.
+/docs/adr/                              @greenmetrics/platform-team
+/docs/decisions/                        @greenmetrics/secops
+/docs/backend/decisions/                @greenmetrics/platform-team @greenmetrics/app-team

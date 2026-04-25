@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://greenmetrics.it/schemas/events/alert.resolved.v1.json",
+  "title": "AlertResolvedEvent",
+  "description": "CloudEvents 1.0 envelope: emitted when an alert transitions to resolved (auto or manual ack).",
+  "type": "object",
+  "required": ["specversion", "id", "source", "type", "subject", "datacontenttype", "time", "data"],
+  "properties": {
+    "specversion": { "const": "1.0" },
+    "id":          { "type": "string", "format": "uuid" },
+    "source":      { "const": "greenmetrics-backend" },
+    "type":        { "const": "it.greenmetrics.alert.resolved.v1" },
+    "subject":     { "type": "string" },
+    "datacontenttype": { "const": "application/json" },
+    "time":        { "type": "string", "format": "date-time" },
+    "data": {
+      "type": "object",
+      "required": ["tenant_id", "alert_id", "resolved_by"],
+      "properties": {
+        "tenant_id":   { "type": "string", "format": "uuid" },
+        "alert_id":    { "type": "string", "format": "uuid" },
+        "resolved_by": { "type": "string", "enum": ["auto", "operator"] },
+        "operator_id": { "type": "string", "format": "uuid" }
+      }
+    }
+  }
+}

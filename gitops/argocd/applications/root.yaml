@@ -1,0 +1,26 @@
+# Argo CD App-of-Apps — root manifest.
+# Doctrine refs: Rule 23, Rule 50, Rule 56, Rule 63.
+# ADR: docs/adr/0004-gitops-with-argocd.md.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: greenmetrics-root
+  namespace: argocd
+  annotations: { argocd.greenmetrics.it/owner: platform-team }
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/greenmetrics/greenmetrics.git
+    targetRevision: main
+    path: gitops/argocd/applications
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground

@@ -1,0 +1,24 @@
+# nuclei configuration — global skips + ROE.
+# Doctrine: Rule 64, Rule 67.
+
+# Skip templates known to be noisy or out-of-scope for our app.
+exclude-templates:
+  - "exposures/configs/git-config.yaml"   # we host on github.com; .git not exposed
+  - "exposures/files/swagger-api.yaml"    # /api/docs is intentional
+  - "vulnerabilities/wordpress/**"        # not WordPress
+  - "vulnerabilities/joomla/**"           # not Joomla
+  - "vulnerabilities/drupal/**"           # not Drupal
+  - "default-logins/admin-default-login.yaml"   # admin auth is JWT, not basic
+
+# ROE — never test these endpoints (audit / regulatory submission).
+exclude-urls:
+  - "/api/v1/auth/login"   # bcrypt cost factor 12 + lockout — DAST would skew metrics
+  - "/api/internal/metrics"
+  - "/api/v1/admin/**"
+
+severity: critical,high
+timeout: 10
+retries: 1
+rate-limit: 5
+debug: false
+no-color: true

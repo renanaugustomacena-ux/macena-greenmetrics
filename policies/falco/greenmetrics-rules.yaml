@@ -1,0 +1,104 @@
+# Falco custom rules for GreenMetrics.
+# Doctrine refs: Rule 19, Rule 39, Rule 58, Rule 60.
+# Mitigates: RISK-006, RISK-007, RISK-009, runtime intrusion patterns.
+
+- list: greenmetrics_namespaces
+  items: [greenmetrics, greenmetrics-staging]
+
+- list: greenmetrics_known_processes
+  items:
+    - greenmetrics-backend
+    - greenmetrics-frontend
+    - greenmetrics-worker
+    - greenmetrics-migrate
+    - greenmetrics-simulator
+    - node           # frontend SSR
+    - postgres
+    - redis
+    - grafana
+    - kyverno
+    - falco
+
+- list: greenmetrics_known_egress_hosts
+  items:
+    - "isprambiente.gov.it"
+    - "api.terna.it"
+    - "api.e-distribuzione.it"
+    - "ghcr.io"
+    - "rds.amazonaws.com"
+    - "secretsmanager.eu-south-1.amazonaws.com"
+    - "kms.eu-south-1.amazonaws.com"
+
+- macro: greenmetrics_pod
+  condition: (k8s.ns.name in (greenmetrics_namespaces))
+
+- rule: GreenMetrics — Unexpected process spawn
+  desc: Process started in a GreenMetrics container that is not on the known list.
+  condition: >
+    spawned_process and
+    container and
+    greenmetrics_pod and
+    not proc.name in (greenmetrics_known_processes) and
+    not proc.pname in (greenmetrics_known_processes)
+  output: >
+    Unexpected process spawned in greenmetrics namespace
+    (user=%user.name pid=%proc.pid cmd=%proc.cmdline ppid=%proc.ppid pcmd=%proc.pcmdline
+     image=%container.image.repository pod=%k8s.pod.name ns=%k8s.ns.name)
+  priority: WARNING
+  tags: [greenmetrics, RISK-006, runtime]
+
+- rule: GreenMetrics — Write to /etc
+  desc: Container wrote to /etc — possible config tampering / persistence attempt.
+  condition: >
+    open_write and
+    container and
+    greenmetrics_pod and
+    fd.name startswith /etc and
+    not fd.name in ("/etc/hosts", "/etc/resolv.conf")
+  output: >
+    Write to /etc inside greenmetrics container
+    (user=%user.name file=%fd.name proc=%proc.cmdline image=%container.image.repository
+     pod=%k8s.pod.name ns=%k8s.ns.name)
+  priority: ERROR
+  tags: [greenmetrics, RISK-006, RISK-009, persistence]
+
+- rule: GreenMetrics — Outbound to unexpected host
+  desc: Outbound connection to a host not on the known egress list.
+  condition: >
+    outbound and
+    container and
+    greenmetrics_pod and
+    fd.sip.name != "" and
+    not fd.sip.name in (greenmetrics_known_egress_hosts) and
+    not fd.sip.name endswith ".svc.cluster.local" and
+    not fd.sip.name endswith ".internal"
+  output: >
+    Unexpected egress from greenmetrics namespace
+    (host=%fd.sip.name port=%fd.sport proc=%proc.cmdline pod=%k8s.pod.name ns=%k8s.ns.name)
+  priority: ERROR
+  tags: [greenmetrics, RISK-006, exfil]
+
+- rule: GreenMetrics — Shell in production container
+  desc: Interactive shell spawned in production GreenMetrics pod (distroless should have no shell).
+  condition: >
+    spawned_process and
+    container and
+    greenmetrics_pod and
+    proc.name in (sh, bash, dash, ksh, zsh, fish, busybox)
+  output: >
+    Shell spawned in greenmetrics container — distroless image should not have shell access
+    (user=%user.name pid=%proc.pid cmd=%proc.cmdline pod=%k8s.pod.name ns=%k8s.ns.name)
+  priority: CRITICAL
+  tags: [greenmetrics, RISK-006, intrusion]
+
+- rule: GreenMetrics — Mount changes
+  desc: Mount or unmount inside container — possible escape attempt.
+  condition: >
+    container and
+    greenmetrics_pod and
+    (evt.type in (mount, umount, umount2))
+  output: >
+    Mount syscall in greenmetrics container
+    (proc=%proc.cmdline syscall=%evt.type pod=%k8s.pod.name ns=%k8s.ns.name)
+  priority: CRITICAL
+  tags: [greenmetrics, RISK-006, escape]

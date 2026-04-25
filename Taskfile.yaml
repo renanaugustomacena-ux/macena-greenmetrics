@@ -1,0 +1,169 @@
+# GreenMetrics Taskfile — top-level CLI contract.
+# Doctrine refs: Rule 14 (CLI contract), Rule 17 (DX).
+# Reference: https://taskfile.dev
+# CLI contract documented in docs/CLI-CONTRACT.md.
+
+version: '3'
+
+vars:
+  BACKEND_DIR: ./backend
+  FRONTEND_DIR: ./frontend
+
+tasks:
+
+  default:
+    desc: List all tasks.
+    cmds: [task --list]
+
+  bootstrap:
+    desc: One-command bootstrap from a fresh clone (≤ 5 min target).
+    cmds: [./scripts/dev/bootstrap.sh]
+
+  up:
+    desc: Start the full stack via docker compose.
+    cmds: [docker compose up -d]
+
+  down:
+    desc: Stop the full stack.
+    cmds: [docker compose down]
+
+  build:
+    desc: Build all images locally.
+    cmds: [docker compose build]
+
+  smoke:
+    desc: Smoke-test backend health.
+    cmds:
+      - curl -fsS http://localhost:8082/api/health | jq .
+
+  test:
+    desc: Run all backend test tiers.
+    cmds:
+      - task: test:unit
+      - task: test:integration
+
+  'test:unit':
+    desc: Backend unit tests (with race detector).
+    dir: '{{.BACKEND_DIR}}'
+    cmds: [make test-unit]
+
+  'test:integration':
+    desc: Backend integration tests (testcontainers).
+    dir: '{{.BACKEND_DIR}}'
+    cmds: [make test-integration]
+
+  'test:e2e':
+    desc: Frontend Playwright E2E against ephemeral compose.
+    dir: '{{.FRONTEND_DIR}}'
+    cmds: [npx playwright test]
+
+  'test:property':
+    desc: Property-based tests.
+    dir: '{{.BACKEND_DIR}}'
+    cmds: [make test-property]
+
+  'test:security':
+    desc: RBAC + RLS + boot-refusal security tests.
+    dir: '{{.BACKEND_DIR}}'
+    cmds: [make test-security]
+
+  'test:conformance':
+    desc: Cross-portfolio invariant conformance suite.
+    dir: '{{.BACKEND_DIR}}'
+    cmds: [make test-conformance]
+
+  bench:
+    desc: k6 perf bench against staging.
+    cmds: [k6 run tests/load/ingest.js]
+
+  lint:
+    desc: Run all linters via pre-commit.
+    cmds: [pre-commit run --all-files]
+
+  precommit:
+    desc: Same as `lint`.
+    cmds: [pre-commit run --all-files]
+
+  verify:
+    desc: Full continuous-verification loop (Rule 64).
+    cmds:
+      - pre-commit run --all-files
+      - task: test:unit
+      - task: test:integration
+      - task: test:property
+      - task: test:security
+      - task: test:conformance
+      - task: 'policy:check'
+      - task: 'openapi:lint'
+      - task: 'security:scan'
+
+  'migrate:up':
+    desc: Apply all pending migrations (goose).
+    dir: '{{.BACKEND_DIR}}'
+    cmds: [make migrate-up]
+
+  'migrate:down':
+    desc: Roll back N migrations (default 1). Usage; task migrate:down N=1
+    dir: '{{.BACKEND_DIR}}'
+    cmds: [make migrate-down N={{.N}}]
+    vars:
+      N: 1
+
+  'migrate:status':
+    desc: Show migration status.
+    dir: '{{.BACKEND_DIR}}'
+    cmds: [make migrate-status]
+
+  'migrate:create':
+    desc: Create a new migration. Usage; task migrate:create NAME=add_idempotency
+    dir: '{{.BACKEND_DIR}}'
+    cmds: [make migrate-create NAME={{.NAME}}]
+
+  'openapi:lint':
+    desc: Validate canonical OpenAPI 3.1 spec.
+    cmds: [npx -y '@redocly/cli@latest' lint api/openapi/v1.yaml]
+
+  'openapi:bundle':
+    desc: Bundle OpenAPI to single-file JSON.
+    cmds: [npx -y '@redocly/cli@latest' bundle api/openapi/v1.yaml -o api/openapi/v1.bundle.json]
+
+  'policy:check':
+    desc: Run conftest + kubeconform gates locally.
+    cmds:
+      - kubeconform -strict -summary -schema-location default k8s/
+      - conftest test --policy policies/conftest/k8s/ k8s/ || true
+      - conftest test --policy policies/conftest/terraform/ terraform/ || true
+
+  'security:scan':
+    desc: Run gitleaks + trivy fs + govulncheck + osv locally.
+    cmds:
+      - gitleaks detect --source .
+      - trivy fs --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .
+      - cd backend && govulncheck ./...
+      - osv-scanner --recursive --skip-git ./
+
+  'rotate:secrets':
+    desc: Trigger ESO refresh (forces sync).
+    cmds: [kubectl annotate externalsecret -n greenmetrics --all "force-sync=$(date +%s)" --overwrite]
+
+  'rotate:jwt':
+    desc: Trigger quarterly JWT KID rotation workflow.
+    cmds: [gh workflow run jwt-rotation.yml]
+
+  'dr:restore':
+    desc: Disaster-recovery restore drill (staging only — refuses in production).
+    cmds: [./scripts/ops/dr-restore.sh staging]
+
+  'cost:audit':
+    desc: Run monthly cost audit script.
+    cmds: [./scripts/ops/cost-audit.sh]
+
+  'audit:rejections':
+    desc: Scan repo for rejected patterns.
+    dir: '{{.BACKEND_DIR}}'
+    cmds: [make audit-rejections]
+
+  'layers:doc':
+    desc: Regenerate docs/LAYERS.md Mermaid from docs/layers.yaml.
+    dir: '{{.BACKEND_DIR}}'
+    cmds: [make layers-doc]

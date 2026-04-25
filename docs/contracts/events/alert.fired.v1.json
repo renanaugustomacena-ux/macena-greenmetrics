@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://greenmetrics.it/schemas/events/alert.fired.v1.json",
+  "title": "AlertFiredEvent",
+  "description": "CloudEvents 1.0 envelope: emitted by the alert engine when a threshold or anomaly fires.",
+  "type": "object",
+  "required": ["specversion", "id", "source", "type", "subject", "datacontenttype", "time", "data"],
+  "properties": {
+    "specversion": { "const": "1.0" },
+    "id":          { "type": "string", "format": "uuid" },
+    "source":      { "const": "greenmetrics-backend" },
+    "type":        { "const": "it.greenmetrics.alert.fired.v1" },
+    "subject":     { "type": "string", "pattern": "^tenants/[0-9a-f-]{36}/alerts/[0-9a-f-]{36}$" },
+    "datacontenttype": { "const": "application/json" },
+    "time":        { "type": "string", "format": "date-time" },
+    "data": {
+      "type": "object",
+      "required": ["tenant_id", "alert_id", "meter_id", "type", "severity", "message"],
+      "properties": {
+        "tenant_id": { "type": "string", "format": "uuid" },
+        "alert_id":  { "type": "string", "format": "uuid" },
+        "meter_id":  { "type": "string", "format": "uuid" },
+        "type":      { "type": "string" },
+        "severity":  { "type": "string", "enum": ["info", "warning", "critical"] },
+        "message":   { "type": "string" },
+        "rule":      { "type": "string" }
+      }
+    }
+  }
+}

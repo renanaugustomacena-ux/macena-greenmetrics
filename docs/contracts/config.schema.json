@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://greenmetrics.it/schemas/config/v1.json",
+  "title": "GreenMetrics Backend Config",
+  "description": "Cross-portfolio config schema. Doctrine refs: Rule 14 (contract first), Rule 19 (security as structural), Rule 39 (security as core). CI gate: ajv validate -s docs/contracts/config.schema.json -d .env.example.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "APP_ENV",
+    "APP_PORT",
+    "DATABASE_URL",
+    "JWT_SECRET",
+    "POSTGRES_USER",
+    "POSTGRES_DB",
+    "POSTGRES_PASSWORD",
+    "GRAFANA_ADMIN_USER",
+    "GRAFANA_ADMIN_PASSWORD"
+  ],
+  "properties": {
+    "APP_ENV": {
+      "type": "string",
+      "enum": ["development", "test", "staging", "production"],
+      "description": "Deployment environment. Production triggers hard sentinel rejection in config.Load."
+    },
+    "APP_PORT": {
+      "type": "string",
+      "pattern": "^[0-9]{2,5}$",
+      "default": "8082"
+    },
+    "DATABASE_URL": {
+      "type": "string",
+      "pattern": "^postgres(ql)?://[^/]+/[^?]+(\\?.*)?$",
+      "description": "Postgres DSN. Production refuses sslmode=disable."
+    },
+    "DB_SSLMODE": {
+      "type": "string",
+      "enum": ["disable", "allow", "prefer", "require", "verify-ca", "verify-full"]
+    },
+    "JWT_SECRET": {
+      "type": "string",
+      "minLength": 32,
+      "description": "≥ 32 bytes effective entropy. Sentinel rejected at boot in production."
+    },
+    "JWT_ACCESS_TTL": {
+      "type": "string",
+      "pattern": "^[0-9]+(ms|s|m|h)$",
+      "default": "15m"
+    },
+    "JWT_REFRESH_TTL": {
+      "type": "string",
+      "pattern": "^[0-9]+(ms|s|m|h)$",
+      "default": "720h"
+    },
+    "JWT_KID_CURRENT": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Current key ID for token signing. Rotation procedure: docs/JWT-ROTATION.md."
+    },
+    "POSTGRES_USER": { "type": "string", "minLength": 1 },
+    "POSTGRES_DB":   { "type": "string", "minLength": 1 },
+    "POSTGRES_PASSWORD": {
+      "type": "string",
+      "minLength": 16,
+      "description": "Sentinel rejected at boot in production."
+    },
+    "GRAFANA_URL": { "type": "string", "format": "uri" },
+    "GRAFANA_ROOT_URL": { "type": "string", "format": "uri" },
+    "GRAFANA_ADMIN_USER": { "type": "string", "minLength": 1 },
+    "GRAFANA_ADMIN_PASSWORD": {
+      "type": "string",
+      "minLength": 16,
+      "description": "Sentinel rejected at boot in production."
+    },
+    "OTEL_SERVICE_NAME": { "type": "string", "default": "greenmetrics-backend" },
+    "OTEL_EXPORTER_OTLP_ENDPOINT": {
+      "anyOf": [
+        { "type": "string", "format": "uri" },
+        { "type": "string", "maxLength": 0 }
+      ],
+      "description": "Empty → tracer disabled. Production should set this to the OTel collector endpoint."
+    },
+    "OTEL_SAMPLE_RATIO": {
+      "type": "string",
+      "pattern": "^(0(\\.[0-9]+)?|1(\\.0+)?)$",
+      "default": "0.1",
+      "description": "0.1 default in production prevents trace storm; 1.0 acceptable elsewhere."
+    },
+    "ISPRA_EMISSION_FACTORS_URL": { "type": "string", "format": "uri" },
+    "TERNA_API_BASE":            { "type": "string", "format": "uri" },
+    "E_DISTRIBUZIONE_API_BASE":  { "type": "string", "format": "uri" },
+    "MODBUS_TCP_TIMEOUT_MS": { "type": "string", "pattern": "^[0-9]+$", "default": "3000" },
+    "MODBUS_POLL_INTERVAL_S": { "type": "string", "pattern": "^[0-9]+$", "default": "30" },
+    "MODBUS_SLAVE_IDS": { "type": "string", "pattern": "^[0-9]+(,[0-9]+)*$" },
+    "MBUS_SERIAL_DEVICE": { "type": "string" },
+    "MBUS_BAUD": { "type": "string", "pattern": "^[0-9]+$", "default": "2400" },
+    "MBUS_POLL_INTERVAL_S": { "type": "string", "pattern": "^[0-9]+$", "default": "300" },
+    "SUNSPEC_MODBUS_ADDR": { "type": "string" },
+    "SUNSPEC_SLAVE_ID": { "type": "string", "pattern": "^[0-9]+$", "default": "126" },
+    "SUNSPEC_BASE_REGISTER": { "type": "string", "pattern": "^[0-9]+$", "default": "40000" },
+    "OCPP_CENTRAL_SYSTEM_URL": { "type": "string" },
+    "OCPP_CHARGE_POINT_ID":    { "type": "string" },
+    "PULSE_WEBHOOK_SECRET": {
+      "type": "string",
+      "minLength": 32,
+      "description": "Used for HMAC-SHA256 signature verification with constant-time compare."
+    },
+    "PULSE_DEDUPE_WINDOW": { "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$", "default": "24h" },
+    "RATE_LIMIT_PER_MINUTE":         { "type": "string", "pattern": "^[0-9]+$", "default": "60" },
+    "RATE_LIMIT_LOGIN_PER_MINUTE":   { "type": "string", "pattern": "^[0-9]+$", "default": "5" },
+    "RATE_LIMIT_INGEST_PER_MINUTE":  { "type": "string", "pattern": "^[0-9]+$", "default": "300" },
+    "AUTH_LOCKOUT_THRESHOLD":   { "type": "string", "pattern": "^[0-9]+$", "default": "5" },
+    "AUTH_LOCKOUT_WINDOW_MIN":  { "type": "string", "pattern": "^[0-9]+$", "default": "15" },
+    "SESSION_IDLE_MINUTES":     { "type": "string", "pattern": "^[0-9]+$", "default": "15" },
+    "SESSION_ABSOLUTE_HOURS":   { "type": "string", "pattern": "^[0-9]+$", "default": "12" },
+    "CORS_ALLOWED_ORIGINS":     { "type": "string" },
+    "FRONTEND_ORIGIN":          { "type": "string", "format": "uri" },
+    "SPD_CLIENT_CERT_PATH":     { "type": "string" },
+    "INGEST_QUEUE_DEPTH":       { "type": "string", "pattern": "^[0-9]+$", "default": "10000" },
+    "REDIS_URL": {
+      "type": "string",
+      "pattern": "^rediss?://.+",
+      "description": "Asynq + distributed rate limit backend. Sentinel rejected if missing in production."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "APP_ENV": { "const": "production" } } },
+      "then": {
+        "required": ["JWT_SECRET", "POSTGRES_PASSWORD", "GRAFANA_ADMIN_PASSWORD", "PULSE_WEBHOOK_SECRET", "REDIS_URL"],
+        "properties": {
+          "JWT_SECRET":            { "minLength": 32, "not": { "const": "change-me-in-production-do-not-use-default" } },
+          "GRAFANA_ADMIN_PASSWORD": { "not": { "const": "change-me" } }
+        }
+      }
+    }
+  ]
+}

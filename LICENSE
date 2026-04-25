@@ -1,0 +1,116 @@
+PROPRIETARY SOFTWARE — ALL RIGHTS RESERVED
+
+Copyright (c) 2026 Renan Augusto Macena. All rights reserved.
+
+This software, including its source code, design, documentation, configuration
+files, deployment manifests, schemas, and all related materials (collectively,
+the "Software"), is the exclusive intellectual property of Renan Augusto
+Macena (the "Author"). The Software is provided to you in confidence and is
+made available solely for the Author's own use and for use by parties who
+receive express prior written permission from the Author.
+
+NO LICENSE IS GRANTED.
+
+No part of the Software may be used, copied, reproduced, modified, adapted,
+translated, merged, published, displayed publicly, distributed, sublicensed,
+sold, leased, rented, transmitted, broadcast, ingested into a derivative
+work, used to train any machine-learning or generative model, or otherwise
+exploited, in whole or in part, in any form or by any means, electronic or
+mechanical (including by photocopy, recording, or any information storage
+and retrieval system), without the express prior written permission of the
+Author.
+
+Mere access to the Software (including via this repository, any clone,
+mirror, or fork thereof) does not constitute, and shall not be construed as,
+a grant of any licence, right, title, or interest in or to the Software or
+any portion thereof.
+
+OWNERSHIP AND TRADEMARKS.
+
+The names "GreenMetrics", "Macena", "macena-tools-lavoro", "macena-greenmetrics",
+and any associated logos, brands, trade dress, designs, or marks (the "Marks")
+are trademarks and trade names of Renan Augusto Macena. The Marks may not be
+used without the express prior written permission of the Author. See
+TRADEMARK.md for the full trademark policy.
+
+The Software is original work authored solely by Renan Augusto Macena.
+Authorship of all files herein is attributed exclusively to the Author. Any
+contribution accepted into the Software requires the contributor to assign,
+or grant the Author an irrevocable, perpetual, worldwide, royalty-free
+licence over, all rights in such contribution sufficient for the Author to
+exercise the full rights reserved by this licence (see CONTRIBUTING.md).
+
+FUTURE OPEN-SOURCE OPTION.
+
+The Author reserves the unilateral right to release the Software, at any
+future time and in whole or in part, under an open-source or
+source-available licence. If and when the Author elects to do so, the new
+licence terms shall be published in this LICENSE file (or in a successor
+file referenced from this one) and shall supersede this proprietary notice
+prospectively from the date of publication.
+
+Unless and until such an election is made and published in writing by the
+Author, this proprietary "All Rights Reserved" notice is the sole and
+exclusive licence governing the Software, and any use, reproduction, or
+distribution not expressly permitted in writing by the Author is strictly
+prohibited.
+
+A future open-source release shall not retroactively grant any right to use
+the Software in any manner inconsistent with this notice prior to the
+publication date of the new licence, and shall in no event waive the
+Author's moral rights of authorship or attribution under applicable law,
+including without limitation Italian Law No. 633 of 22 April 1941 (Legge sul
+diritto d'autore).
+
+UNAUTHORISED USE IS PROHIBITED.
+
+Unauthorised reproduction, modification, distribution, public performance,
+public display, or other exploitation of the Software, or any portion of
+it, may result in severe civil and criminal penalties, and will be
+prosecuted to the maximum extent possible under applicable law, including
+without limitation:
+
+  - Italian Law No. 633 of 22 April 1941 (Legge sul diritto d'autore) as
+    amended;
+  - Directive 2001/29/EC of the European Parliament and of the Council of
+    22 May 2001 on the harmonisation of certain aspects of copyright and
+    related rights in the information society;
+  - Directive 2009/24/EC of the European Parliament and of the Council of
+    23 April 2009 on the legal protection of computer programs;
+  - The Berne Convention for the Protection of Literary and Artistic Works.
+
+NO WARRANTY.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT. THE AUTHOR
+DOES NOT WARRANT THAT THE SOFTWARE WILL OPERATE UNINTERRUPTED OR
+ERROR-FREE, OR THAT ANY DEFECTS WILL BE CORRECTED.
+
+LIMITATION OF LIABILITY.
+
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY (WHETHER IN CONTRACT, TORT, NEGLIGENCE, STRICT LIABILITY, OR
+OTHERWISE), INCLUDING WITHOUT LIMITATION ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL DAMAGES (INCLUDING DAMAGES
+FOR LOSS OF PROFITS, REVENUE, DATA, USE, GOODWILL, OR OTHER INTANGIBLE
+LOSSES), ARISING FROM OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGES.
+
+GOVERNING LAW AND JURISDICTION.
+
+This licence shall be governed by and construed in accordance with the laws
+of the Italian Republic. The exclusive jurisdiction for any dispute arising
+out of or in connection with this licence shall be the courts of Verona,
+Italy.
+
+LICENSING ENQUIRIES.
+
+For commercial licensing, evaluation, partnership, integration, or any
+other use not expressly permitted by this notice, contact the Author at:
+
+  Renan Augusto Macena
+  renanaugustomacena@gmail.com
+
+End of licence.

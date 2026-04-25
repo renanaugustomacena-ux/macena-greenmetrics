@@ -1,0 +1,49 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: greenmetrics-slo
+  namespace: greenmetrics
+  labels: { app: greenmetrics-backend, role: alert-rules }
+spec:
+  groups:
+    - name: greenmetrics-slo
+      interval: 1m
+      rules:
+
+        # --- Recording: availability ratio per service ---
+        - record: gm:slo_availability:ratio_5m
+          expr: |
+            sum by (service) (rate(gm_http_requests_total{status!~"5.."}[5m]))
+              / clamp_min(sum by (service) (rate(gm_http_requests_total[5m])), 1)
+
+        # --- Recording: error budget burn rate ---
+        - record: gm:slo_error_budget_burn:1h
+          expr: |
+            (1 - sum(rate(gm_http_requests_total{status!~"5.."}[1h])) / sum(rate(gm_http_requests_total[1h])))
+              / (1 - 0.995)   # SLO 99.5%
+
+        - record: gm:slo_error_budget_burn:6h
+          expr: |
+            (1 - sum(rate(gm_http_requests_total{status!~"5.."}[6h])) / sum(rate(gm_http_requests_total[6h])))
+              / (1 - 0.995)
+
+        # --- Multi-window multi-burn-rate per Google SRE workbook ---
+        - alert: SLOErrorBudgetBurnFast
+          expr: |
+            gm:slo_error_budget_burn:1h > 14.4
+              and on() gm:slo_error_budget_burn:6h > 6
+          for: 2m
+          labels: { severity: critical }
+          annotations:
+            summary: "Burning SLO error budget fast (14.4× over 1h, 6× over 6h)"
+            description: "At current rate the 30d budget exhausts in < 24h. Open IR."
+
+        - alert: SLOErrorBudgetBurnSlow
+          expr: |
+            gm:slo_error_budget_burn:6h > 1
+              and on() (1 - sum(rate(gm_http_requests_total{status!~"5.."}[3d])) / sum(rate(gm_http_requests_total[3d]))) > (1 - 0.995)
+          for: 1h
+          labels: { severity: warning }
+          annotations:
+            summary: "Slow SLO error budget burn detected"
+            description: "Sustained slow burn over 3d > monthly budget allowance."

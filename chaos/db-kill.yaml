@@ -1,0 +1,12 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: db-pod-kill
+  namespace: greenmetrics-staging
+  annotations: { chaos.greenmetrics.it/experiment: CE-01, chaos.greenmetrics.it/runbook: db-outage }
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    namespaces: [greenmetrics-staging]
+    labelSelectors: { app: timescaledb }

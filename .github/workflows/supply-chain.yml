@@ -1,0 +1,105 @@
+# Supply chain hardening — Cosign keyless sign + SLSA L2 provenance + Trivy image.
+# Doctrine refs: Rule 53 (supply chain), Rule 54 (policy as code), Rule 56 (automation), Rule 67 (transparency).
+#
+# Trust chain: GitHub OIDC → Sigstore Fulcio cert → Cosign signature → Kyverno verify-images at admission.
+# Plan ADR: docs/adr/0017-cosign-keyless-oidc.md, docs/adr/0018-slsa-l2-now-l3-plan.md.
+
+name: Supply Chain
+
+on:
+  workflow_run:
+    workflows: ["CD Pipeline"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag (sha or version) to sign'
+        required: true
+
+permissions:
+  contents: read
+  id-token: write    # OIDC token for Sigstore keyless signing
+  packages: write    # GHCR write for attestations
+  attestations: write
+  actions: read
+
+jobs:
+
+  cosign-sign:
+    name: Cosign · keyless sign + SBOM attest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [greenmetrics-backend, greenmetrics-frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: sigstore/cosign-installer@v3
+      - uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: ${{ matrix.image }}.spdx.json
+      - name: Cosign sign (keyless via OIDC)
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.image }}
+          TAG: ${{ inputs.image_tag || github.event.workflow_run.head_sha }}
+        run: |
+          cosign sign --yes "${IMAGE}:${TAG}"
+      - name: Cosign attest SBOM (SPDX)
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.image }}
+          TAG: ${{ inputs.image_tag || github.event.workflow_run.head_sha }}
+        run: |
+          cosign attest --yes --predicate "${{ matrix.image }}.spdx.json" --type spdx "${IMAGE}:${TAG}"
+
+  trivy-image:
+    name: Trivy · image scan (post-build, fail HIGH/CRITICAL)
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [greenmetrics-backend, greenmetrics-frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy image
+        uses: aquasecurity/trivy-action@0.24.0
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.image }}
+          TAG: ${{ inputs.image_tag || github.event.workflow_run.head_sha }}
+        with:
+          image-ref: ${{ env.IMAGE }}:${{ env.TAG }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
+  slsa-provenance-backend:
+    # SLSA L2 provenance via slsa-github-generator. L3 plan in ADR-018.
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+      actions: read
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
+    with:
+      image: ghcr.io/${{ github.repository }}/greenmetrics-backend
+      digest: ${{ github.event.workflow_run.head_sha }}
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  slsa-provenance-frontend:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+      actions: read
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
+    with:
+      image: ghcr.io/${{ github.repository }}/greenmetrics-frontend
+      digest: ${{ github.event.workflow_run.head_sha }}
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://greenmetrics.it/schemas/events/user.locked.v1.json",
+  "title": "UserLockedEvent",
+  "description": "CloudEvents 1.0 envelope: emitted when account lockout fires (≥ AUTH_LOCKOUT_THRESHOLD failures within window).",
+  "type": "object",
+  "required": ["specversion", "id", "source", "type", "subject", "datacontenttype", "time", "data"],
+  "properties": {
+    "specversion": { "const": "1.0" },
+    "id":          { "type": "string", "format": "uuid" },
+    "source":      { "const": "greenmetrics-backend" },
+    "type":        { "const": "it.greenmetrics.user.locked.v1" },
+    "subject":     { "type": "string", "pattern": "^tenants/[0-9a-f-]{36}/users/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$" },
+    "datacontenttype": { "const": "application/json" },
+    "time":        { "type": "string", "format": "date-time" },
+    "data": {
+      "type": "object",
+      "required": ["tenant_id", "email", "lockout_reason", "lockout_until"],
+      "properties": {
+        "tenant_id":      { "type": "string", "format": "uuid" },
+        "email":          { "type": "string", "format": "email" },
+        "lockout_reason": { "type": "string", "enum": ["repeated_failed_login"] },
+        "ip":             { "type": "string" },
+        "lockout_until":  { "type": "string", "format": "date-time" },
+        "failure_count":  { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

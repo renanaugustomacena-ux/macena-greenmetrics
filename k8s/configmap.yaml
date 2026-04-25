@@ -1,0 +1,26 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: greenmetrics-backend-config
+  namespace: greenmetrics
+data:
+  APP_ENV: "production"
+  APP_PORT: "8082"
+  OTEL_SERVICE_NAME: "greenmetrics-backend"
+  JWT_ACCESS_TTL: "15m"
+  JWT_REFRESH_TTL: "720h"
+  ISPRA_EMISSION_FACTORS_URL: "https://www.isprambiente.gov.it/it/pubblicazioni/rapporti/fattori-di-emissione"
+  TERNA_API_BASE: "https://api.terna.it"
+  E_DISTRIBUZIONE_API_BASE: "https://api.e-distribuzione.it"
+  MODBUS_TCP_TIMEOUT_MS: "3000"
+  MODBUS_POLL_INTERVAL_S: "30"
+  MODBUS_SLAVE_IDS: "1,2,3,4,5"
+  RATE_LIMIT_PER_MINUTE: "60"
+  RATE_LIMIT_LOGIN_PER_MINUTE: "5"
+  RATE_LIMIT_INGEST_PER_MINUTE: "300"
+  AUTH_LOCKOUT_THRESHOLD: "5"
+  AUTH_LOCKOUT_WINDOW_MIN: "15"
+  SESSION_IDLE_MINUTES: "15"
+  SESSION_ABSOLUTE_HOURS: "12"
+  CORS_ALLOWED_ORIGINS: "https://app.greenmetrics.it"

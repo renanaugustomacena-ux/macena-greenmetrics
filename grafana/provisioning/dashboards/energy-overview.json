@@ -1,0 +1,127 @@
+{
+  "uid": "gm-energy-overview",
+  "title": "GreenMetrics · Energy Overview",
+  "tags": ["greenmetrics", "energy"],
+  "timezone": "Europe/Rome",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-7d", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "tenant",
+        "type": "textbox",
+        "label": "Tenant",
+        "current": { "text": "placeholder-tenant", "value": "placeholder-tenant" }
+      },
+      {
+        "name": "meter",
+        "type": "query",
+        "label": "Contatore",
+        "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+        "query": "SELECT label AS __text, id::text AS __value FROM meters WHERE tenant_id = '$tenant'::uuid ORDER BY label",
+        "includeAll": true,
+        "multi": true,
+        "refresh": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Consumo elettrico (kWh)",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "kwatth" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT bucket AS time, sum_value AS value, label AS metric FROM readings_15min r JOIN meters m ON m.id = r.meter_id WHERE r.tenant_id = '$tenant'::uuid AND m.meter_type IN ('electricity','electricity_3p') AND r.bucket >= $__timeFrom() AND r.bucket < $__timeTo() AND ($meter = 'All' OR r.meter_id::text IN ($meter)) ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Costo energia (€)",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "currencyEUR" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT bucket AS time, sum_value * 0.185 AS value, 'cost' AS metric FROM readings_1h WHERE tenant_id = '$tenant'::uuid AND bucket >= $__timeFrom() AND bucket < $__timeTo() ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "CO2e cumulata (t)",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 6 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT SUM(sum_value) * 0.250 / 1000 AS co2_tonnes FROM readings_1h WHERE tenant_id = '$tenant'::uuid AND bucket >= $__timeFrom() AND bucket < $__timeTo()"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "bargauge",
+      "title": "Top 5 consumatori",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 6, "y": 8, "w": 6, "h": 6 },
+      "options": { "orientation": "horizontal" },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT m.label AS metric, SUM(r.sum_value) AS value FROM readings_1h r JOIN meters m ON m.id = r.meter_id WHERE r.tenant_id = '$tenant'::uuid AND r.bucket >= $__timeFrom() AND r.bucket < $__timeTo() GROUP BY m.label ORDER BY value DESC LIMIT 5"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Anomalie rilevate (markers)",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT triggered_at AS time, 1 AS value, kind AS metric FROM alerts WHERE tenant_id = '$tenant'::uuid AND kind = 'consumption_anomaly' AND triggered_at >= $__timeFrom() AND triggered_at < $__timeTo() ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "piechart",
+      "title": "Consumo per turno",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT CASE WHEN EXTRACT(HOUR FROM bucket) BETWEEN 6 AND 13 THEN 'Mattino' WHEN EXTRACT(HOUR FROM bucket) BETWEEN 14 AND 21 THEN 'Pomeriggio' ELSE 'Notte' END AS metric, SUM(sum_value) AS value FROM readings_1h WHERE tenant_id = '$tenant'::uuid AND bucket >= $__timeFrom() AND bucket < $__timeTo() GROUP BY 1"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "heatmap",
+      "title": "Heatmap consumi (ora × giorno)",
+      "datasource": { "type": "postgres", "uid": "greenmetrics-timescaledb" },
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT bucket AS time, sum_value AS value FROM readings_1h WHERE tenant_id = '$tenant'::uuid AND bucket >= $__timeFrom() AND bucket < $__timeTo() ORDER BY 1"
+        }
+      ]
+    }
+  ]
+}

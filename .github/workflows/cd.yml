@@ -1,0 +1,127 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build + push images
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/greenmetrics-backend:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/greenmetrics-backend:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository }}/greenmetrics-backend:latest
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            COMMIT=${{ github.sha }}
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/greenmetrics-frontend:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/greenmetrics-frontend:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository }}/greenmetrics-frontend:latest
+      - name: Cosign signing
+        uses: sigstore/cosign-installer@v3
+      # cosign sign is a placeholder — wire with OIDC-based keyless in production.
+
+  deploy-staging:
+    name: Deploy → staging (eu-south-1)
+    needs: build
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy stub
+        run: |
+          echo "kubectl apply -f k8s/ with image tag ${{ github.sha }}"
+          echo "(placeholder — Helm/Argo CD invocation goes here)"
+
+  integration-test:
+    name: Integration tests (Playwright)
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder smoke test
+        run: |
+          echo "curl -f https://staging.greenmetrics.it/api/health"
+
+  deploy-production:
+    name: Deploy → production
+    needs: integration-test
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://app.greenmetrics.it
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Blue/green rollout stub
+        run: |
+          echo "Promoting ${{ github.sha }} to production"
+
+  health-check:
+    name: Post-deploy health check
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    if: always() && startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - run: |
+          for i in 1 2 3 4 5; do
+            echo "Healthcheck attempt $i"
+            curl -fsS https://app.greenmetrics.it/api/health && exit 0 || sleep 15
+          done
+          echo "Health check failed — triggering rollback"
+          exit 1
+
+  notify:
+    name: Notify Slack / Email
+    needs: [deploy-production, health-check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Notification placeholder — wire Slack/Email webhook"
+
+  release:
+    name: GitHub Release
+    needs: health-check
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
