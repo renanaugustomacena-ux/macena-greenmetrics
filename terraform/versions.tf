@@ -10,7 +10,7 @@ terraform {
     # aruba = { source = "ArubaCloud/aruba", version = "~> 0.4" }
     grafana = {
       source  = "grafana/grafana"
-      version = "~> 3.8"
+      version = "~> 4.33"
     }
     random = {
       source  = "hashicorp/random"
