@@ -72,7 +72,7 @@ func NewIngestorRunner(cfg IngestorConfig, repo *repository.TimescaleRepository,
 		r.cfg.ModbusPollEvery = 30 * time.Second
 	}
 	if cfg.TenantID == "" {
-		r.cfg.TenantID = "placeholder-tenant"
+		r.cfg.TenantID = "00000000-0000-4000-8000-000000000001"
 	}
 	r.modbus = NewModbusIngestor(logger, r.cfg.ModbusTimeout)
 
@@ -168,19 +168,36 @@ func (r *IngestorRunner) pollAndPersist(ctx context.Context, slaveID byte) {
 		return
 	}
 	now := time.Now().UTC()
-	readings := make([]repository.Reading, 0, len(vals))
-	meterID := fmt.Sprintf("sim-meter-%d", slaveID)
-	for k, v := range vals {
-		readings = append(readings, repository.Reading{
-			Ts:          now,
-			TenantID:    r.cfg.TenantID,
-			MeterID:     meterID,
-			ChannelID:   k,
-			Value:       v,
-			Unit:        unitFor(k),
-			QualityCode: 0,
-		})
+	// Dev seed convention (scripts/dev/seed.sql):
+	//   slave_id N → meter UUID …0000000eeeNN, channel UUID …0000ccc0000N.
+	// Production should resolve via a meters table lookup keyed on
+	// (tenant_id, protocol, endpoint, slave_addr); deferred until the
+	// per-aggregate repository split lands (Phase 4 of the doctrinal plan).
+	meterID := fmt.Sprintf("00000000-0000-4000-8000-0000000eee%02d", slaveID)
+	channelID := fmt.Sprintf("00000000-0000-4000-8000-0000ccc%05d", slaveID)
+	// Pick the primary value (deterministic order via the points list).
+	pointKeys := make([]string, 0, len(pts))
+	for _, p := range pts {
+		pointKeys = append(pointKeys, p.Name)
 	}
+	var primaryValue float64
+	var primaryUnit string
+	for _, k := range pointKeys {
+		if v, ok := vals[k]; ok {
+			primaryValue = v
+			primaryUnit = unitFor(k)
+			break
+		}
+	}
+	readings := []repository.Reading{{
+		Ts:          now,
+		TenantID:    r.cfg.TenantID,
+		MeterID:     meterID,
+		ChannelID:   channelID,
+		Value:       primaryValue,
+		Unit:        primaryUnit,
+		QualityCode: 0,
+	}}
 	insCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	if _, err := r.repo.InsertReadings(insCtx, readings); err != nil {

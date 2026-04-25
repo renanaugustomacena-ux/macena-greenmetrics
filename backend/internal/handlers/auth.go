@@ -123,7 +123,7 @@ func (h *authHandler) verifyCredentials(ctx context.Context, email, password str
 			return "", "", errors.New("auth store unavailable")
 		}
 		if email == "operator@greenmetrics.local" {
-			return "dev-tenant", string(models.RoleOperator), nil
+			return "00000000-0000-4000-8000-000000000001", string(models.RoleOperator), nil
 		}
 		return "", "", errors.New("credentials not recognised (dev fallback)")
 	}

@@ -1,14 +1,26 @@
 <script lang="ts">
-  const meters = [
-    { id: 'CE-001', label: 'Quadro Generale CE-001', type: 'electricity_3p', protocol: 'modbus_tcp', site: 'Stabilimento A', status: 'online' },
-    { id: 'CE-002', label: 'Cabina CE-002', type: 'electricity_3p', protocol: 'modbus_tcp', site: 'Stabilimento A', status: 'online' },
-    { id: 'GAS-001', label: 'Linea forni', type: 'gas', protocol: 'mbus', site: 'Stabilimento A', status: 'online' },
-    { id: 'TH-001', label: 'Centrale termica', type: 'thermal', protocol: 'mbus', site: 'Stabilimento B', status: 'online' },
-    { id: 'PV-001', label: 'Fotovoltaico tetto nord', type: 'pv_inverter', protocol: 'sunspec', site: 'Stabilimento A', status: 'online' },
-    { id: 'EV-001', label: 'Colonnina OCPP ingresso', type: 'ev_charger', protocol: 'ocpp', site: 'Stabilimento A', status: 'idle' },
-    { id: 'H2O-001', label: 'Contatore acqua produttivo', type: 'water', protocol: 'pulse', site: 'Stabilimento A', status: 'online' },
-    { id: 'CE-101', label: 'Pressa 200t', type: 'electricity_3p', protocol: 'modbus_rtu', site: 'Stabilimento A', status: 'online' }
-  ];
+  // SSR data passed as `meters` prop from +page.server.ts (or an empty array
+  // when the page hasn't supplied one — pages other than /meters use the
+  // hardcoded preview list below).
+  export let meters: Array<{
+    id: string;
+    label?: string;
+    meter_type?: string;
+    protocol?: string;
+    site?: string;
+    cost_centre?: string;
+    active?: boolean;
+    serial_no?: string;
+  }> = [];
+
+  $: items = meters && meters.length > 0
+    ? meters
+    : [
+        // Fallback preview (used only if SSR didn't supply data).
+        { id: 'CE-001', label: 'Quadro Generale CE-001', meter_type: 'electricity_3p', protocol: 'modbus_tcp', site: 'Stabilimento A', active: true },
+        { id: 'CE-002', label: 'Cabina CE-002', meter_type: 'electricity_3p', protocol: 'modbus_tcp', site: 'Stabilimento A', active: true },
+        { id: 'GAS-001', label: 'Linea forni', meter_type: 'gas', protocol: 'mbus', site: 'Stabilimento A', active: true }
+      ];
 </script>
 
 <div class="card overflow-x-auto">
@@ -24,15 +36,17 @@
       </tr>
     </thead>
     <tbody class="divide-y divide-forest-50">
-      {#each meters as m}
+      {#each items as m}
         <tr class="hover:bg-cream-100">
-          <td class="py-2 font-mono">{m.id}</td>
-          <td>{m.label}</td>
-          <td>{m.type}</td>
-          <td>{m.protocol}</td>
-          <td>{m.site}</td>
+          <td class="py-2 font-mono text-xs">
+            {m.serial_no ?? (m.id?.length > 12 ? m.id.slice(0, 8) + '…' + m.id.slice(-4) : m.id)}
+          </td>
+          <td>{m.label ?? '—'}</td>
+          <td>{m.meter_type ?? '—'}</td>
+          <td>{m.protocol ?? '—'}</td>
+          <td>{m.site ?? '—'}</td>
           <td>
-            <span class="badge-scope-2">{m.status}</span>
+            <span class="badge-scope-2">{m.active === false ? 'inactive' : 'online'}</span>
           </td>
         </tr>
       {/each}

@@ -38,7 +38,7 @@ func (h *readingsHandler) Query(c *fiber.Ctx) error {
 func (h *readingsHandler) Ingest(c *fiber.Ctx) error {
 	tenantID, _ := c.Locals("tenant_id").(string)
 	if tenantID == "" {
-		tenantID = "placeholder-tenant"
+		tenantID = "00000000-0000-4000-8000-000000000001"
 	}
 	var body struct {
 		Readings []models.Reading `json:"readings"`
@@ -76,7 +76,7 @@ func (h *readingsHandler) Ingest(c *fiber.Ctx) error {
 func (h *readingsHandler) Aggregated(c *fiber.Ctx) error {
 	tenantID, _ := c.Locals("tenant_id").(string)
 	if tenantID == "" {
-		tenantID = "placeholder-tenant"
+		tenantID = "00000000-0000-4000-8000-000000000001"
 	}
 	meterID := c.Query("meter_id")
 	resolution := c.Query("resolution", "1h")
