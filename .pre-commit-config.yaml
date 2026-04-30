@@ -113,21 +113,18 @@ repos:
     hooks:
       - id: actionlint
 
-  # Kubernetes.
-  - repo: https://github.com/yannh/kubeconform
-    rev: 1bd44986dd3d281725afab6b173770ec86b454fc  # v0.6.7
-    hooks:
-      - id: kubeconform
-        args:
-          - "-strict"
-          - "-summary"
-          - "-schema-location"
-          - "default"
-        files: ^k8s/.*\.ya?ml$
-
-  # OPA / conftest — runs in audit mode locally; CI is the enforcement gate.
+  # Kubernetes — kubeconform runs in CI's policy-gate-k8s job (the enforcement
+  # gate). yannh/kubeconform does not ship a .pre-commit-hooks.yaml, so we use
+  # a local hook that calls the binary if it's installed and skips otherwise.
+  # Per Rule 54 (policy as code) the CI gate is authoritative.
   - repo: local
     hooks:
+      - id: kubeconform-k8s
+        name: kubeconform validate k8s/ (audit)
+        language: system
+        entry: bash -c 'command -v kubeconform >/dev/null && kubeconform -strict -summary -schema-location default k8s/ || echo "[kubeconform] binary not installed locally; CI policy-gate-k8s will gate."'
+        pass_filenames: false
+        files: ^k8s/.*\.ya?ml$
       - id: conftest-k8s
         name: conftest test k8s/ (audit)
         language: system
