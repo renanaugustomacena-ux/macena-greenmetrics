@@ -29,7 +29,7 @@
     "@types/node": "^20.12.7",
     "autoprefixer": "^10.4.19",
     "eslint": "^9.6.0",
-    "eslint-plugin-svelte": "^2.40.0",
+    "eslint-plugin-svelte": "^3.17.1",
     "svelte-eslint-parser": "^0.41.0",
     "postcss": "^8.4.39",
     "svelte": "^4.2.19",
