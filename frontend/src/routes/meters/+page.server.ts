@@ -10,6 +10,18 @@ import type { PageServerLoad } from './$types';
 import { env as privateEnv } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 
+// Meter shape returned by /api/v1/meters — matches the MeterList component prop.
+interface Meter {
+  id: string;
+  label?: string;
+  meter_type?: string;
+  protocol?: string;
+  site?: string;
+  cost_centre?: string;
+  active?: boolean;
+  serial_no?: string;
+}
+
 const BACKEND = (privateEnv.INTERNAL_API_BASE || publicEnv.PUBLIC_API_BASE || 'http://greenmetrics-backend:8082/api/v1').replace(/\/$/, '');
 const DEV_EMAIL = privateEnv.DEV_EMAIL || 'dev@greenmetrics.local';
 const DEV_PASSWORD = privateEnv.DEV_PASSWORD || 'OperatorPass2026!';
@@ -51,7 +63,7 @@ export const load: PageServerLoad = async () => {
       const body = await r.text();
       return { meters: [], error: `meters ${r.status}: ${body.slice(0, 200)}` };
     }
-    const data = (await r.json()) as { items?: unknown[] };
+    const data = (await r.json()) as { items?: Meter[] };
     return { meters: data.items ?? [], error: null };
   } catch (e) {
     return { meters: [], error: e instanceof Error ? e.message : String(e) };
