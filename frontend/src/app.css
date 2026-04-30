@@ -5,31 +5,146 @@
 @layer base {
   html {
     font-family: theme('fontFamily.sans');
+    background-color: theme('colors.cream.50');
+    color: theme('colors.forest.900');
   }
 
-  h1, h2, h3, h4 {
-    @apply font-semibold text-forest-900;
+  body {
+    font-feature-settings: 'cv02', 'cv11';
   }
 
-  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  h1 {
+    @apply text-2xl font-semibold tracking-tight text-forest-950;
+  }
+  h2 {
+    @apply text-xl font-semibold tracking-tight text-forest-950;
+  }
+  h3 {
+    @apply text-base font-semibold text-forest-900;
+  }
+  h4 {
+    @apply text-sm font-semibold text-forest-900;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
     @apply outline-none ring-2 ring-forest-600 ring-offset-2 ring-offset-cream-50;
   }
 }
 
 @layer components {
+  /* ── Cards ─────────────────────────────────────────────────────────── */
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-forest-100 p-6;
+    @apply bg-white rounded-xl shadow-card border border-forest-100/60 p-6;
   }
+  .card-tight {
+    @apply bg-white rounded-xl shadow-card border border-forest-100/60 p-4;
+  }
+  .card-elevated {
+    @apply bg-white rounded-xl shadow-elevated border border-forest-100/40 p-6;
+  }
+  .card-accent {
+    @apply rounded-xl border border-forest-200 bg-gradient-to-br from-cream-50 to-cream-100 p-6;
+  }
+
+  /* ── Buttons ───────────────────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-colors;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors;
   }
   .btn-primary {
     @apply btn bg-forest-800 text-cream-50 hover:bg-forest-700 focus-visible:ring-forest-600;
   }
   .btn-secondary {
-    @apply btn bg-earth-100 text-earth-900 hover:bg-earth-200;
+    @apply btn bg-white text-forest-900 border border-forest-200 hover:bg-cream-50;
   }
-  .badge-scope-1 { @apply bg-earth-100 text-earth-900 px-2 py-0.5 rounded text-xs font-medium; }
-  .badge-scope-2 { @apply bg-forest-100 text-forest-900 px-2 py-0.5 rounded text-xs font-medium; }
-  .badge-scope-3 { @apply bg-cream-200 text-earth-900 px-2 py-0.5 rounded text-xs font-medium; }
+  .btn-ghost {
+    @apply btn text-forest-700 hover:bg-forest-50;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  /* ── Scope badges ──────────────────────────────────────────────────── */
+  .badge-scope-1 {
+    @apply inline-flex items-center bg-earth-100 text-earth-900 px-2 py-0.5 rounded text-xs font-medium;
+  }
+  .badge-scope-2 {
+    @apply inline-flex items-center bg-forest-100 text-forest-900 px-2 py-0.5 rounded text-xs font-medium;
+  }
+  .badge-scope-3 {
+    @apply inline-flex items-center bg-cream-200 text-earth-900 px-2 py-0.5 rounded text-xs font-medium;
+  }
+
+  /* ── Status badges (regulatory + system) ───────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium border;
+  }
+  .badge-success {
+    @apply badge bg-forest-50 text-forest-800 border-forest-200;
+  }
+  .badge-warning {
+    @apply badge bg-saffron-50 text-saffron-900 border-saffron-200;
+  }
+  .badge-danger {
+    @apply badge bg-rosso-50 text-rosso-900 border-rosso-200;
+  }
+  .badge-neutral {
+    @apply badge bg-stone-50 text-stone-700 border-stone-200;
+  }
+
+  /* ── Status dot ────────────────────────────────────────────────────── */
+  .dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full;
+  }
+  .dot-live {
+    @apply dot bg-forest-500 ring-2 ring-forest-500/30 animate-pulse;
+  }
+  .dot-stale {
+    @apply dot bg-saffron-500;
+  }
+  .dot-down {
+    @apply dot bg-rosso-500;
+  }
+
+  /* ── KPI block ─────────────────────────────────────────────────────── */
+  .kpi-label {
+    @apply text-[11px] uppercase tracking-wider font-medium text-forest-700;
+  }
+  .kpi-value {
+    @apply mt-2 text-3xl font-semibold tracking-tight text-forest-950;
+  }
+  .kpi-unit {
+    @apply text-base font-normal text-forest-700;
+  }
+  .kpi-delta-positive {
+    @apply text-xs font-medium text-forest-700;
+  }
+  .kpi-delta-negative {
+    @apply text-xs font-medium text-rosso-700;
+  }
+
+  /* ── Section helpers ───────────────────────────────────────────────── */
+  .eyebrow {
+    @apply text-[11px] uppercase tracking-wider font-semibold text-forest-700;
+  }
+  .muted {
+    @apply text-sm text-forest-700;
+  }
+
+  /* ── Tables ────────────────────────────────────────────────────────── */
+  .table-clean {
+    @apply w-full text-sm;
+  }
+  .table-clean thead th {
+    @apply text-left font-medium text-forest-700 px-3 py-2 border-b border-forest-100 bg-cream-50/60;
+  }
+  .table-clean tbody td {
+    @apply px-3 py-3 border-b border-forest-100/60 text-forest-900 align-top;
+  }
+  .table-clean tbody tr:hover {
+    @apply bg-cream-50/50;
+  }
 }
