@@ -236,9 +236,12 @@ jobs:
       - name: govulncheck
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
-          # `go install` puts the binary in $(go env GOPATH)/bin which isn't
-          # on PATH by default in actions/setup-go. Add it explicitly.
-          export PATH="$(go env GOPATH)/bin:$PATH"
+          # `go install` puts the binary in $GOPATH/bin which isn't on PATH
+          # by default in actions/setup-go. Add it explicitly. Declared and
+          # assigned on separate lines to satisfy shellcheck SC2155 (so the
+          # subshell exit status from `go env` is not masked by `export`).
+          GOBIN="$(go env GOPATH)/bin"
+          export PATH="$GOBIN:$PATH"
           cd backend && govulncheck ./...
       - name: Trivy FS
         uses: aquasecurity/trivy-action@v0.36.0

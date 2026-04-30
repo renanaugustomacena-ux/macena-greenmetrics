@@ -14,9 +14,4 @@
     "module": "ESNext",
     "types": ["vite/client", "node"]
   }
-  // `include` intentionally omitted — extending `.svelte-kit/tsconfig.json`
-  // inherits its include list which already covers ambient.d.ts (where
-  // `$env/dynamic/*`, `$app/*`, etc. are declared) plus src/**/*. Overriding
-  // `include` in the child config REPLACES the parent's list and drops the
-  // ambient declarations, breaking $env imports.
 }
