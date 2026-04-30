@@ -21,7 +21,7 @@ CSEA) una diagnosi energetica quadriennale secondo le norme tecniche
 EN 16247-1/2/3/4. La diagnosi va depositata sul portale `audit102.enea.it`
 entro il 5 dicembre dell'anno di riferimento.
 
-- **Verifica fonte:** https://www.normattiva.it — atto 2014-07-04;102
+- **Verifica fonte:** <https://www.normattiva.it> — atto 2014-07-04;102
 - **Codice:** `backend/internal/services/audit_client.go` (preparazione
   dossier) + `backend/internal/services/report_generator.go`
   (`buildAuditDLgs102`).
@@ -37,7 +37,7 @@ misura e rendicontazione; introduce criteri aggiuntivi per l'indicazione dei
 risparmi energetici nell'ambito dei meccanismi di incentivazione (TEE, Conto
 Termico, Piano Transizione 5.0).
 
-- **Verifica fonte:** https://www.normattiva.it — atto 2020-07-14;73
+- **Verifica fonte:** <https://www.normattiva.it> — atto 2020-07-14;73
 - **Codice:** citato in `report_generator.go` buildAuditDLgs102; i calcoli di
   risparmio energetico in `ComputePianoTransizione50Result` rispettano le
   soglie e le banding tables conformi al decreto.
@@ -62,7 +62,7 @@ Corporate Sustainability Reporting Directive. Estende l'obbligo di
 rendicontazione di sostenibilità a ~50 000 aziende europee in modo
 progressivo 2024–2028. Recepimento italiano: D.Lgs. 6 settembre 2024, n. 125.
 
-- **Verifica fonte:** https://eur-lex.europa.eu/eli/dir/2022/2464/oj (EN/IT).
+- **Verifica fonte:** <https://eur-lex.europa.eu/eli/dir/2022/2464/oj> (EN/IT).
 - **Codice:** `report_generator.go` — funzione `buildESRSE1` produce il
   payload dei data-point ESRS E1.
 - **Test:** `backend/tests/report_generator_test.go` —
@@ -76,7 +76,7 @@ E4 Biodiversity, E5 Resource use & circular economy, S1–S4 Social, G1
 Business conduct). GreenMetrics supporta in modo nativo ESRS E1; gli altri
 standard sono disponibili tramite data-import dal cliente.
 
-- **Verifica fonte:** https://eur-lex.europa.eu/eli/reg_del/2023/2772/oj
+- **Verifica fonte:** <https://eur-lex.europa.eu/eli/reg_del/2023/2772/oj>
 - **Codice:** `buildESRSE1` emette:
   - **E1-5** consumo energetico totale, con split rinnovabile / non rinnovabile
     (split 0,35 / 0,65 come valore predefinito — configurabile per tenant).
@@ -119,8 +119,8 @@ D.M. MIMIT-MASE 24 luglio 2024):
 | 10% – 15% | 35% |
 | ≥ 15% | 40% |
 
-- **Verifica fonte:** https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legge:2024-03-02;19
-- **Verifica conversione:** https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:legge:2024-04-29;56
+- **Verifica fonte:** <https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legge:2024-03-02;19>
+- **Verifica conversione:** <https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:legge:2024-04-29;56>
 - **Codice:** `services.ComputePianoTransizione50Result` — calcolo
   deterministico esportato e testato in `report_generator_test.go`:
   - `TestPiano50_BaselineSaving3Percent` — baseline 100 000 kWh con
@@ -137,7 +137,7 @@ del codice unico e della verifica dei risparmi. GreenMetrics produce
 l'attestazione (HTML e JSON) firmabile da un EGE (UNI CEI 11339) o da un
 auditor EN 16247-5.
 
-- **Verifica fonte:** https://www.mimit.gov.it/ — pubblicato sulla Gazzetta
+- **Verifica fonte:** <https://www.mimit.gov.it/> — pubblicato sulla Gazzetta
   Ufficiale del 06/08/2024.
 - **Codice:** firma nel template
   `pianoTransizione50HTMLTemplate` in `report_generator.go`.
@@ -152,7 +152,7 @@ Incentivi GSE per interventi di incremento dell'efficienza energetica e
 produzione di energia termica da fonti rinnovabili. Copre pompe di calore,
 solare termico, caldaie a biomassa, isolamento, impianti ibridi.
 
-- **Verifica fonte:** https://www.gse.it/servizi-per-te/efficienza-energetica/conto-termico
+- **Verifica fonte:** <https://www.gse.it/servizi-per-te/efficienza-energetica/conto-termico>
 - **Codice:** `report_generator.go` — `buildContoTermico`. Lo stub produce
   il tipo di intervento (esempio "2.C — sostituzione di impianti di
   climatizzazione invernale esistenti con pompe di calore"), il portale GSE
@@ -164,7 +164,7 @@ Titoli di Efficienza Energetica. Il progetto di risparmio è misurato in
 tonnellate equivalenti di petrolio (tep) risparmiate per anno. Emissione
 dei TEE gestita dal GSE.
 
-- **Verifica fonte:** https://www.gse.it/servizi-per-te/efficienza-energetica/certificati-bianchi
+- **Verifica fonte:** <https://www.gse.it/servizi-per-te/efficienza-energetica/certificati-bianchi>
 - **Codice:** `report_generator.go` — `buildCertificatiBianchi`. Il report
   produce il payload di submission iniziale; la presentazione al portale
   GSE CB è esterna.
@@ -177,7 +177,7 @@ negli allegati. GreenMetrics non opera il registro ETS ma può esportare i
 dati di emissione verso i sistemi di monitoraggio ETS verificati da
 ente accreditato (art. 18 Dir. 2003/87/CE).
 
-- **Verifica fonte:** https://eur-lex.europa.eu/legal-content/IT/TXT/?uri=CELEX%3A02003L0087-20240301
+- **Verifica fonte:** <https://eur-lex.europa.eu/legal-content/IT/TXT/?uri=CELEX%3A02003L0087-20240301>
 - **Stato GreenMetrics:** export dati via API `/api/v1/readings/export` (CSV).
   Nessun'integrazione diretta con il registro; documentata come export.
 
@@ -197,7 +197,7 @@ di energia elettrica in Italia". Versioni in uso:
 | 2023 | 0,250 | ISPRA Rapporto 404/2024 |
 | 2024 | 0,245 (provvisorio) | ISPRA 2024 stima provvisoria |
 
-- **Verifica fonte:** https://www.isprambiente.gov.it/it/pubblicazioni/rapporti/fattori-di-emissione-per-la-produzione-ed-il-consumo-di-energia-elettrica-in-italia
+- **Verifica fonte:** <https://www.isprambiente.gov.it/it/pubblicazioni/rapporti/fattori-di-emissione-per-la-produzione-ed-il-consumo-di-energia-elettrica-in-italia>
 - **Codice:** migration `0005_emission_factors.sql` — seed con chiave
   composita `(code, valid_from)`; default cache in
   `carbon_calculator.go` (`defaultFactors`).
@@ -210,7 +210,7 @@ di energia elettrica in Italia". Versioni in uso:
 Parametri standard nazionali per la combustione del gas naturale: 1,975 kg
 CO2e per Sm3 (combustione stazionaria).
 
-- **Verifica fonte:** https://www.mase.gov.it/sites/default/files/archivio/allegati/DGP/dm_11-05-2022.pdf
+- **Verifica fonte:** <https://www.mase.gov.it/sites/default/files/archivio/allegati/DGP/dm_11-05-2022.pdf>
 - **Codice:** factor `NG_STATIONARY_COMBUSTION` in `defaultFactors`.
 - **Test:** `TestCarbonCalculator_Scope1_NaturalGas` — 10 000 Sm3 × 1,975 =
   19 750 kg CO2e.
@@ -221,7 +221,7 @@ Association of Issuing Bodies (AIB) — residual mix per il calcolo
 "market-based" secondo GHG Protocol Scope 2 Guidance. Valore 2023 per
 l'Italia: 0,457 kg CO2e / kWh.
 
-- **Verifica fonte:** https://www.aib-net.org/facts/european-residual-mix
+- **Verifica fonte:** <https://www.aib-net.org/facts/european-residual-mix>
 - **Codice:** factor `IT_ELEC_RESIDUAL_MIX_2023`.
 - **Test:** `TestCarbonCalculator_MarketBased`.
 
@@ -296,13 +296,13 @@ vuoto coerente.
 
 ## 10. Riferimenti ufficiali
 
-- https://www.normattiva.it — normativa italiana vigente.
-- https://eur-lex.europa.eu — diritto dell'Unione.
-- https://www.isprambiente.gov.it — fattori di emissione.
-- https://www.gse.it — GSE (Conto Termico 2.0, Certificati Bianchi, Piano 5.0).
-- https://www.mimit.gov.it — MIMIT (Ministero delle Imprese e del Made in Italy).
-- https://www.mase.gov.it — MASE (Ambiente e Sicurezza Energetica).
-- https://www.terna.it — Terna S.p.A. (TSO).
-- https://www.e-distribuzione.it — E-Distribuzione (DSO).
-- https://www.arera.it — ARERA.
-- https://www.mercatoelettrico.org — GME.
+- <https://www.normattiva.it> — normativa italiana vigente.
+- <https://eur-lex.europa.eu> — diritto dell'Unione.
+- <https://www.isprambiente.gov.it> — fattori di emissione.
+- <https://www.gse.it> — GSE (Conto Termico 2.0, Certificati Bianchi, Piano 5.0).
+- <https://www.mimit.gov.it> — MIMIT (Ministero delle Imprese e del Made in Italy).
+- <https://www.mase.gov.it> — MASE (Ambiente e Sicurezza Energetica).
+- <https://www.terna.it> — Terna S.p.A. (TSO).
+- <https://www.e-distribuzione.it> — E-Distribuzione (DSO).
+- <https://www.arera.it> — ARERA.
+- <https://www.mercatoelettrico.org> — GME.

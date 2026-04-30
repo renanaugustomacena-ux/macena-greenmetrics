@@ -49,7 +49,7 @@ Deploy **Falco** as a DaemonSet with custom rules. Fall back to **Tetragon** (eB
 
 - `policies/falco/greenmetrics-rules.yaml`.
 - `gitops/base/falco/` (Helm-managed, S5).
-- Tetragon: https://github.com/cilium/tetragon.
+- Tetragon: <https://github.com/cilium/tetragon>.
 
 ## Tradeoff Stanza
 

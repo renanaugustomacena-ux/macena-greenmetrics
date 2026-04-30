@@ -1,18 +1,17 @@
 {
   "default": true,
-  "MD013": {
-    "line_length": 200,
-    "code_blocks": false,
-    "tables": false,
-    "headings": false
-  },
+  "MD013": false,
   "MD024": {
     "siblings_only": true
+  },
+  "MD025": {
+    "front_matter_title": ""
   },
   "MD033": {
     "allowed_elements": ["br", "details", "summary", "sub", "sup"]
   },
   "MD036": false,
+  "MD040": false,
   "MD041": false,
   "MD046": {
     "style": "fenced"

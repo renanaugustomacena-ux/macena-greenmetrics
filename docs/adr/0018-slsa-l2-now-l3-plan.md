@@ -50,7 +50,7 @@ SLSA (Supply-chain Levels for Software Artifacts) defines progressive supply-cha
 
 ## References
 
-- https://slsa.dev/spec/v1.0/levels
+- <https://slsa.dev/spec/v1.0/levels>
 - `.github/workflows/supply-chain.yml`.
 - `docs/SUPPLY-CHAIN.md` §2.
 

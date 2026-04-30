@@ -1663,4 +1663,3 @@ The third PR of Sprint S5 should rewrite `docs/MODUS_OPERANDI.md` per ADR-0028 (
 These are the first three concrete moves. From there, Sprint S5 deliverables §5.3.4 onward are scheduled per the remaining 7 weekdays.
 
 The plan is lived, not read. Start.
-

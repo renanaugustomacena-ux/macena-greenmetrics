@@ -30,11 +30,11 @@ responsible-disclosure obligations.
 Instead, report privately by **either** of the following channels:
 
 - **GitHub private vulnerability reporting:**
-  https://github.com/renanaugustomacena-ux/macena-greenmetrics/security/advisories/new
+  <https://github.com/renanaugustomacena-ux/macena-greenmetrics/security/advisories/new>
   (preferred when GitHub Security Advisories is enabled on the repository.)
 
 - **Email (PGP-encrypted preferred):**
-  renanaugustomacena@gmail.com — subject line `[SECURITY] GreenMetrics`.
+  <renanaugustomacena@gmail.com> — subject line `[SECURITY] GreenMetrics`.
 
 Include the following information:
 
@@ -125,6 +125,6 @@ the time of your report governs the handling of that report.
 ## 9. Contact
 
   Renan Augusto Macena
-  renanaugustomacena@gmail.com
+  <renanaugustomacena@gmail.com>
 
 End of vulnerability disclosure policy.

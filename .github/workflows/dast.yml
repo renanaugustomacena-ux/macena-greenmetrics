@@ -51,7 +51,8 @@ jobs:
 
       - name: Open issue on findings
         if: failure()
-        env: { GH_TOKEN: ${{ github.token }} }
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh issue create \
             --title "DAST nuclei findings $(date -u +%Y-%m-%d)" \
@@ -73,7 +74,8 @@ jobs:
 
       - name: Open issue on findings
         if: failure()
-        env: { GH_TOKEN: ${{ github.token }} }
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh issue create \
             --title "DAST ZAP baseline findings $(date -u +%Y-%m-%d)" \

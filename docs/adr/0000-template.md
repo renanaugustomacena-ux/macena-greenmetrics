@@ -2,7 +2,7 @@
 
 **Status:** Proposed | Accepted | Superseded by NNNN | Rejected
 **Date:** YYYY-MM-DD
-**Authors:** @<github-handle>
+**Authors:** `@<github-handle>`
 **Doctrine rules:** [list rule numbers, e.g. 14, 27, 39]
 **Review date:** YYYY-MM-DD
 
@@ -43,10 +43,10 @@ What are we still exposed to after this decision? Reference `RISK-NNN` from `doc
 
 ## References
 
-- Doctrine plan: `~/.claude/plans/my-brother-i-would-flickering-coral.md` §<section>
+- Doctrine plan: `~/.claude/plans/my-brother-i-would-flickering-coral.md` §`<section>`
 - Related ADRs: 0NNN
 - Runbooks: `docs/runbooks/<file>.md`
-- External sources: <links>
+- External sources: `<links>`
 
 ## Tradeoff Stanza
 

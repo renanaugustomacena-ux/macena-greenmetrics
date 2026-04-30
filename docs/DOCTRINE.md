@@ -2888,6 +2888,3 @@ The cross-portfolio `CLAUDE.md` file at `~/.claude/projects/-media-alexcupsa-SSD
 ---
 
 *This doctrine governs every PR, ADR, runbook, and engagement decision in the repository at and after Sprint S5. PRs that violate a binding rule without an override-allowed ADR are blocked. The doctrine is reviewed at six-month intervals; the next review is 2026-10-30.*
-
-
-

@@ -51,7 +51,7 @@ sudo curl -sL https://github.com/grafana/k6/releases/latest/download/k6-v0.55.0-
 go install github.com/derailed/k9s@latest
 
 echo "[devcontainer] installing pre-commit hooks…"
-cd /workspaces/$(basename $(pwd))
+cd "/workspaces/$(basename "$(pwd)")"
 pre-commit install || true
 pre-commit install --hook-type commit-msg || true
 

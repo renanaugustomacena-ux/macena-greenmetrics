@@ -253,4 +253,3 @@ func JWTMiddleware(d Dependencies) fiber.Handler {
 		return c.Next()
 	}
 }
-

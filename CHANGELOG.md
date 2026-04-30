@@ -14,9 +14,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - **Sprint S5 — MODUS_OPERANDI v2 (engagement playbook).** `docs/MODUS_OPERANDI.md` rewritten in place per ADR-0028. Replaces the SaaS framing (per-meter pricing tiers €99/€249/Enterprise, CAC/LTV/churn unit economics, multi-tenant SaaS framing, ARR/ARPA targets) with the engagement model (license + customisation + annual maintenance + tier retainer; engagement-margin / time-to-customisation / template-fit-score / net-engagement-value / annual-maintenance-attach-rate KPIs; Phase 0–5 engagement lifecycle). Italian market analysis (CSRD wave-2 / Piano 5.0 / D.Lgs. 102/2014 tailwinds; sector composition; competitive positioning) preserved unchanged.
 - **Sprint S5 — COST-MODEL v2 (engagement-margin model).** `docs/COST-MODEL.md` rewritten in place per Plan §5.3.3, sibling to ADR-0028. Replaces the v1 per-tenant unit economics (€/meter/month, 4×-cost gross-margin target, environment-totals AWS Budgets) with the per-engagement P&L (license + customisation + maintenance + tier-retainer + regulatory-deliverable revenue lines against engagement-lead time + advisory + per-deployment infra + Pack-update labour + regulatory-deliverable delivery + template-R&D amortisation cost lines), the per-deployment infra-cost model across Topologies A/B/C/D, the portfolio aggregate view (capacity utilisation + amortisation + Pack-contribution rate), per-deployment AWS Budgets, and engagement-level efficiency / waste-detection / anti-pattern coverage. Worked Standard T1 5-year P&L anchored on MODUS_OPERANDI v2 §11.3 (€440k revenue / €140k cost / €300k net / 68.2% margin). Doctrine refs: Rules 1, 13, 27, 38, 151, 152, 156, 168.
 
-### Changed
-
-- **`docs/adr/0001-platform-doctrine-adoption.md`** annotated with a 2026-04-30 supersession note pointing to ADR-0021. The ADR's "regulated-industry SaaS" framing is replaced; the operational decisions for Sprints S1–S4 remain in effect.
 - **Sprint S5 — Pack manifest schema.** New `docs/contracts/pack-manifest.schema.json` (JSON Schema 2020-12) is the source of truth for the manifest format; the Go struct mirrors it.
 - **Sprint S5 — `packs/` repository directory + README.** Documents the target Pack catalogue layout (12 protocol Packs, 6 factor Packs, 12 report Packs, 2 identity Packs, 6 region Packs) and the per-Pack contents convention.
 - **Sprint S5 — `config/required-packs.yaml` skeleton.** Declarative list of Packs required for this deployment per Rule 75; Phase E Sprint S5 ships empty; Sprint S6+ populates with Italian-flagship Packs.
@@ -55,6 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Changed
 
+- **`docs/adr/0001-platform-doctrine-adoption.md`** annotated with a 2026-04-30 supersession note pointing to ADR-0021. The ADR's "regulated-industry SaaS" framing is replaced; the operational decisions for Sprints S1–S4 remain in effect.
 - **README.md** — added documentation index linking new docs.
 - **frontend/Dockerfile** — added supply-chain comment block + RISK-002/-005 cross-reference.
 - **.github/workflows/ci.yml** — restructured around new gate jobs (pre-commit-ci, policy-gate-*, openapi-lint, license, osv-scanner, adr-link-check); SHA-pinning will land via Dependabot weekly migration (RISK-005).

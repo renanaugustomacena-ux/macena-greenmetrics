@@ -21,6 +21,12 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
         args: ["--allow-multiple-documents"]
+        # Exclude files that use templated syntax incompatible with the
+        # strict YAML parser: GitHub Actions ${{ }} expressions (validated
+        # separately by `actionlint`), Grafana alerting files that mix flow
+        # mappings with PromQL expressions, and the go-task Taskfile (uses
+        # {{ .Var }} templating).
+        exclude: '^(\.github/workflows/|grafana/alerting/|Taskfile\.ya?ml$)'
       - id: check-json
       - id: check-merge-conflict
       - id: check-added-large-files

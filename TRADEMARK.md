@@ -95,7 +95,7 @@ If you become aware of any actual or suspected violation of this trademark
 policy, please contact the Owner at:
 
   Renan Augusto Macena
-  renanaugustomacena@gmail.com
+  <renanaugustomacena@gmail.com>
 
 ## 7. Permission requests
 
