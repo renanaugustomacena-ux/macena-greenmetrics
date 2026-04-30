@@ -8,7 +8,7 @@ A trust boundary is a crossing where data, identity, or privilege transitions be
 
 | ID | Crossing | Direction | Protocol | Authn | Authz | Encryption | Audit | Threat ref |
 |---|---|---|---|---|---|---|---|---|
-| TB-01 | Browser → CloudFront edge | inbound | HTTPS | n/a (public assets) / JWT (XHR) | WAF rate-based | TLS 1.3 | CloudFront access log → S3 (KMS) | `docs/THREAT-MODEL.md` §3.3 |
+| TB-01 | Browser → CloudFront edge | inbound | HTTPS | n/a (public assets) / JWT (XHR) | WAF rate-based | TLS 1.3 | CloudFront access log → S3 (KMS) | `docs/THREAT-MODEL.md` §4.3 |
 | TB-02 | CloudFront → AWS WAF | inbound | HTTP | n/a | managed core rules + custom rate rules | inside AWS network | WAF logs → S3 (KMS) | DDoS amplification |
 | TB-03 | WAF → nginx ingress | inbound | HTTPS (re-encrypt) | n/a | NetworkPolicy | TLS 1.3 (cert-manager / Let's Encrypt) | nginx access log → Loki | TLS downgrade |
 | TB-04 | Ingress → Backend pod | inbound | HTTP (mTLS planned S4) | JWT HS256 + `kid` | RBAC `RequirePermission` | mTLS planned (`docs/MTLS-PLAN.md`) | audit_log table per state-changing op | TB-04 spoofing |
