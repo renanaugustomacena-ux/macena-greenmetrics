@@ -183,4 +183,4 @@ exclusive licence governing this Software.
 | Conduct | [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) | Contributor Covenant v2.1. |
 | Security | [`SECURITY.md`](./SECURITY.md) | Vulnerability disclosure policy. |
 
-For licensing enquiries: **renanaugustomacena@gmail.com**.
+For licensing enquiries: **<renanaugustomacena@gmail.com>**.

@@ -1,0 +1,33 @@
+# osv-scanner ignore list.
+#
+# Doctrine refs: Rule 53 (pin every dependency), Rule 59 (vulnerability response is SLA'd).
+#
+# Per Rule 59, HIGH/CRITICAL vulns block CI immediately; MEDIUM/LOW can be
+# tracked and ignored with an explicit acknowledgment + sunset date pending
+# a planned migration. Each entry below names the upstream PR/sprint that
+# will close it. Reviewed quarterly per Rule 138 / docs/PENTEST-CADENCE.md.
+
+[[IgnoredVulns]]
+id = "GHSA-crpf-4hrx-3jrp"
+ignoreUntil = 2026-12-31
+reason = "Svelte 4→5 major migration. Tracked for Phase F Sprint S11 frontend overhaul. CVSS 5.3 (medium); the affected client-side template helper is not user-input-driven in our component set."
+
+[[IgnoredVulns]]
+id = "GHSA-f7gr-6p89-r883"
+ignoreUntil = 2026-12-31
+reason = "Svelte 4→5 major migration. Same migration window as GHSA-crpf-4hrx-3jrp. CVSS 5.1 (medium)."
+
+[[IgnoredVulns]]
+id = "GHSA-m56q-vw4c-c2cp"
+ignoreUntil = 2026-12-31
+reason = "Svelte 4→5 major migration. Same migration window. CVSS 5.1 (medium)."
+
+[[IgnoredVulns]]
+id = "GHSA-phwv-c562-gvmh"
+ignoreUntil = 2026-12-31
+reason = "Svelte 4→5 major migration. Fixed in Svelte 5.53.5; same migration window. CVSS 5.3 (medium)."
+
+[[IgnoredVulns]]
+id = "GHSA-4w7w-66w2-5vf9"
+ignoreUntil = 2026-12-31
+reason = "Vite 5→6 major migration. Vite 6 changes plugin API; bundled with the SvelteKit upgrade in Phase F Sprint S11. CVSS 6.3 (medium); affects vite dev server, not production builds."

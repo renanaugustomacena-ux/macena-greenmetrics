@@ -194,7 +194,7 @@ Returns raw readings (capped at `limit`, default 1000).
 
 Errors: 400 if `from`/`to` missing or invalid RFC 3339.
 
-### GET /api/v1/readings/aggregated?meter_id=...&resolution=15min|1h|1d&from=...&to=...
+### GET /api/v1/readings/aggregated?meter_id=...&resolution=15min|1h|1d&from=...&to=
 
 Returns rows from the corresponding continuous aggregate view.
 
@@ -208,7 +208,7 @@ Returns rows from the corresponding continuous aggregate view.
 }
 ```
 
-### GET /api/v1/readings/export?meter_id=...&from=...&to=...
+### GET /api/v1/readings/export?meter_id=...&from=...&to=
 
 Streams CSV with header `ts,tenant_id,meter_id,channel_id,value,unit,quality_code`.
 

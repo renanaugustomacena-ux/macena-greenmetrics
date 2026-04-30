@@ -129,7 +129,7 @@ kubectl logs -n falco -l app=falco | jq 'select(.priority=="Critical" or .priori
 cd frontend && npm run dev
 ```
 
-Vite serves on http://localhost:5173 (dev) or http://localhost:3005 (compose).
+Vite serves on <http://localhost:5173> (dev) or <http://localhost:3005> (compose).
 
 ### Browser devtools
 

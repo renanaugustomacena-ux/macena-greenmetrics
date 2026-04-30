@@ -27,6 +27,7 @@ docker compose ps
 ```
 
 Shutdown:
+
 ```bash
 docker compose down           # preserves volumes
 docker compose down -v        # wipes timescale/grafana volumes

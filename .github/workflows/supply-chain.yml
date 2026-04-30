@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Trivy image
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         env:
           IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.image }}
           TAG: ${{ inputs.image_tag || github.event.workflow_run.head_sha }}

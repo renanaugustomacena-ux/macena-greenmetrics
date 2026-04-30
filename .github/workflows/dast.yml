@@ -51,12 +51,18 @@ jobs:
 
       - name: Open issue on findings
         if: failure()
-        env: { GH_TOKEN: ${{ github.token }} }
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Pass `inputs.target` and `github.run_id` via the env block (not
+          # interpolated into the shell command) to prevent shell-injection
+          # — Semgrep `yaml.github-actions.security.run-shell-injection`.
+          TARGET: ${{ inputs.target || 'staging' }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           gh issue create \
             --title "DAST nuclei findings $(date -u +%Y-%m-%d)" \
             --label "dast,security,priority-high" \
-            --body "Weekly nuclei sweep returned findings against ${{ inputs.target || 'staging' }}.\n\nReport artifact attached to run ${{ github.run_id }}.\n\nTriage per docs/PENTEST-CADENCE.md §3."
+            --body "Weekly nuclei sweep returned findings against ${TARGET}.\n\nReport artifact attached to run ${RUN_ID}.\n\nTriage per docs/PENTEST-CADENCE.md §3."
 
   zap-baseline:
     name: ZAP baseline (passive scan)
@@ -73,9 +79,14 @@ jobs:
 
       - name: Open issue on findings
         if: failure()
-        env: { GH_TOKEN: ${{ github.token }} }
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Pass `inputs.target` via the env block (not interpolated into the
+          # shell command) to prevent shell-injection — Semgrep rule
+          # `yaml.github-actions.security.run-shell-injection`.
+          TARGET: ${{ inputs.target || 'staging' }}
         run: |
           gh issue create \
             --title "DAST ZAP baseline findings $(date -u +%Y-%m-%d)" \
             --label "dast,security,priority-high" \
-            --body "Weekly ZAP baseline sweep returned findings against ${{ inputs.target || 'staging' }}.\n\nTriage per docs/PENTEST-CADENCE.md §3."
+            --body "Weekly ZAP baseline sweep returned findings against ${TARGET}.\n\nTriage per docs/PENTEST-CADENCE.md §3."

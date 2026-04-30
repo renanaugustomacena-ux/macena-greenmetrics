@@ -67,7 +67,7 @@ Instances of abusive, harassing, or otherwise unacceptable behaviour may
 be reported privately to:
 
   Renan Augusto Macena
-  renanaugustomacena@gmail.com
+  <renanaugustomacena@gmail.com>
 
 All complaints will be reviewed and investigated promptly and fairly.
 All maintainers are obligated to respect the privacy and security of
@@ -84,12 +84,12 @@ out in the [Contributor Covenant v2.1](https://www.contributor-covenant.org/vers
 This code of conduct is adapted from the
 [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/),
 available at
-https://www.contributor-covenant.org/version/2/1/code_of_conduct.html.
+<https://www.contributor-covenant.org/version/2/1/code_of_conduct.html>.
 
 Community impact guidelines are inspired by Mozilla's code of conduct
 enforcement ladder.
 
 For answers to common questions about this code of conduct, see the FAQ
-at https://www.contributor-covenant.org/faq.
+at <https://www.contributor-covenant.org/faq>.
 
 End of code of conduct.

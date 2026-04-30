@@ -1,342 +1,596 @@
-# MODUS OPERANDI — GreenMetrics
+# MODUS OPERANDI — GreenMetrics v2
 
-> Energy Management & Sustainability Reporting Platform for Italian Energy-Intensive SMEs — a strategic, technical, and operational playbook.
+> Engagement playbook for the GreenMetrics modular template. Strategic, technical, and operational.
+> **Supersedes v1 (the SaaS playbook) per ADR-0028 on 2026-04-30.**
+> Reads alongside `docs/MODULAR-TEMPLATE-CHARTER.md`, `docs/DOCTRINE.md`, `docs/PLAN.md`, `docs/COMPETITIVE-BRIEF.md`.
+
+---
+
+## 0. What changed since v1
+
+If you read MODUS_OPERANDI v1 and absorbed €99/€249 pricing tiers, CAC funnels, LTV/churn metrics, "multi-tenant SaaS" framing, and a 2-person-direct-sales-org targeting €5.4M ARR by Y3 — that document is retired. The pivot recorded in `docs/MODULAR-TEMPLATE-CHARTER.md` reframes the project as a *modular template* delivered as *engagements*, not a hosted SaaS product.
+
+The four most important deltas:
+
+1. **No multi-tenant SaaS.** Every engagement is a single-tenant deployment by default (multi-tenant by configuration only when a partner ESCO or system-integrator wants to host multiple clients on one substrate). The threat model, the RBAC matrix, the RLS policies — all preserved as defence in depth, but the tenant primitive is engineering hygiene, not a billing primitive.
+
+2. **No per-meter pricing.** The unit of sale is the engagement: a contracted commercial relationship covering license + customisation services + annual maintenance + (optionally) co-managed or fully-managed retainer. A deployment with 5 meters and a deployment with 5,000 meters cost the same on the license line; the engagement margin scales with engagement complexity, not with meter count.
+
+3. **No churn / CAC / LTV.** The KPIs are engagement margin, time-to-customisation, template-fit-score, net-engagement-value, annual-maintenance-attach-rate. Engagements are won or lost end-to-end, not as cohort attrition.
+
+4. **No self-serve.** Industrial customers don't self-serve. The engagement starts with a discovery conversation, runs through Phase 0–5 of the lifecycle, and ends in operator-readiness handover (or co-managed / fully-managed continuation).
+
+The Italian market analysis from v1 is preserved unchanged in §2 (the underlying TAM / SAM / SOM is about the market, not our delivery model). The technical-architecture overview is preserved with light annotation pointing at the Pack extraction (Sprint S6–S7 of `docs/PLAN.md`).
 
 ---
 
 ## 1. Executive Summary
 
-GreenMetrics is a multi-tenant SaaS platform that gives Italian manufacturing and agro-industrial SMEs the operational and regulatory visibility that the twin transitions — digital and green — now demand of them. In concrete terms the platform ingests meter data from electricity, gas, water, thermal, and renewable-generation assets; converts those time-series into scope-categorised emissions using versioned ISPRA / GSE / EcoInvent factors; and emits the full set of sustainability dossiers that Italian and European regulation either requires or incentivises: ESRS E1 for the CSRD dichiarazione di sostenibilità, the Piano Transizione 5.0 attestazione that unlocks the 5–45 per cent tax credit on qualifying I4.0 + energy-efficiency investments, the Conto Termico 2.0 GSE application for renewable-thermal incentives, the Certificati Bianchi TEE submissions, and the D.Lgs. 102/2014 audit energetico quadriennale in the ENEA-prescribed format. It is built on a deliberately specialist stack — Go with the Fiber framework for the high-throughput ingestion backend, SvelteKit 2 for a lean reactive console, TimescaleDB for first-class time-series storage at meter-scale volumes, and Grafana for operator-facing dashboards — because the problem domain is explicitly a time-series and compliance-reporting problem and is badly served by generic business-software stacks.
+GreenMetrics is **the regulator-grade modular template for industrial energy management and sustainability reporting**. We deliver it to clients as an engagement: the contracted client receives the template (source, infrastructure, doctrine, runbooks, audit evidence), the engagement specialises it via Pack composition + a customisation sprint, and the deployment is operated by the client (T1 Handover), co-managed (T2), or fully-managed by Macena (T3) depending on tier.
 
-The elevator pitch is specific and commercial. An energy-intensive Verona manufacturer spending €500k–€2 M on qualifying equipment and connected monitoring can recover a tax credit worth €50k–€900k under Piano Transizione 5.0 if the accompanying energy-saving attestazione meets the 3 per cent process or 5 per cent site thresholds. GreenMetrics is the monitoring, computation and attestazione infrastructure that demonstrably hits those thresholds and documents them in the format MIMIT and GSE require. In practice the subscription cost of GreenMetrics for a typical mid-sized plant is on the order of €5k–€30k per year; the recovered credit is one to two orders of magnitude larger. That asymmetry is the commercial wedge that unlocks the market, but it is also what transforms the conversation from "yet another energy-monitoring tool" into "the compliance machine that pays for itself".
+The buyer profile is the energy-intensive Italian industrial SME (later: European industrial SME) that needs CSRD ESRS E1, Piano Transizione 5.0 attestazione, Conto Termico 2.0 GSE submission, Certificati Bianchi TEE, and D.Lgs. 102/2014 audit energetico capability and is not adequately served by:
 
-The product is built for the Verona province's specific economic mix: discrete manufacturing (machinery, metallurgy, automotive supply, white-goods), process manufacturing (food and beverage, cement, paper), and agro-industrial operations (wine and olive-oil processing, dairy, canning). These are exactly the ATECO codes caught by the new CSRD perimeter and the legacy D.Lgs. 102/2014 audit obligation; they are also where the Piano Transizione 5.0 budget is being absorbed in 2025–2026. By focusing narrowly on this industrial base in Northern Italy and delivering an Italian-first user experience — Italian copy, Italian regulatory references, EUR currency with comma decimals, timezone Europe/Rome baked into the Grafana provisioning, direct integration stubs for Terna, E-Distribuzione and GSE — we are producing a product that the customer recognises as "loro" (ours), not "un tool americano adattato alla meglio".
+- the Tier 1 enterprise OT/automation platforms (Schneider EcoStruxure / Siemens Sinergy / ABB Ability / Honeywell Forge / Emerson Ovation Green / Rockwell FactoryTalk Energy) that price at €50k–€300k per site per year and require six-month integrations;
+- the ESG SaaS platforms (Watershed / Persefoni / Sweep / Greenly / Plan A / Sphera / Cority / Wolters Kluwer Enablon / Workiva) that lack OT-native ingestion and Italian-regulation depth;
+- the hyperscaler ESG suites (IBM Envizi / Salesforce Net Zero / Microsoft Sustainability Manager / SAP Green Ledger / Google Carbon Footprint) that ship generic, vendor-locked, US-cloud-first surfaces;
+- the Italian utility-bundled / ESCO platforms (Enel X / A2A / Hera / Edison Next / Duferco Energia / SunCity) that face structural conflicts of interest on Piano 5.0 attestazione for investments they did not sell.
 
-Competitive positioning is equally explicit. Global enterprise ESG platforms (Schneider EcoStruxure Resource Advisor, Siemens Sinalytics, ABB Ability Energy Manager, Honeywell Forge, Emerson Ovation Green) target Fortune-500 multinationals, price in five or six figures per site per year, require six-month integrations, and address Italian regulation only as a localisation afterthought. National competitors (Enel X Way, A2A Smart City, Hera Smart City, Edison EnergEnvision, Illumia Energia Sostenibile, Duferco Sun, SunCity, ESCOA) are usually vertically integrated with a utility or an ESCO relationship, which is great for their own energy-service contracts but adds a procurement layer the customer frequently does not want. GreenMetrics slots between the two: a vendor-neutral, open-source-licensed, Italian-domiciled specialist.
+The wedge is regulator-grade engineering. We make claims (bit-perfect reproducibility, signed audit chain, formal-spec validation against EFRAG XBRL / GSE XSD / ENEA XSD, signed reading provenance with per-meter HMAC, Pack-versioned thresholds, EGE counter-signature workflow, single-command audit-evidence-pack export) that no surveyed competitor makes (per `docs/COMPETITIVE-BRIEF.md`) and cannot quickly acquire. The 210-rule doctrine in `docs/DOCTRINE.md` makes those claims auditable and the codebase reviewable.
 
-The remainder of this document lays out the market size, the business model, the technical architecture, the development roadmap, scaling, security and compliance posture, infrastructure, team plan, go-to-market, financial projections, and operational runbooks in the order prescribed by the universal MODUS_OPERANDI template. The total length is intentionally long: this is the document that justifies the build against the investment horizon, not a quick-start guide.
+The commercial mechanics: each engagement is sized in the €100k–€500k band combining license + customisation + first-year maintenance, with annual maintenance attach at ≥ 90% of T1 closures and an optional co-managed retainer at €4k–€12k/month or fully-managed retainer at €18k–€55k/month for clients who want operations-as-a-service. The Phase E–J plan (`docs/PLAN.md`) targets *five engagements through Phase 5 Handover* by end of Phase J Sprint S22 (≈ March 2027). Engagement portfolio expansion happens engagement-by-engagement, with the Italian flagship Pack + 5 additional Region Packs + 12 Protocol Packs + 6 Factor Packs + 8 Report Packs + 3 Identity Packs in the catalogue by Phase H exit.
 
----
-
-## 2. Market Analysis
-
-The addressable market for GreenMetrics in Italy sits at the intersection of three policy tailwinds that are all accelerating simultaneously and all share the same underlying data requirement — namely, continuous and auditable measurement of energy consumption and greenhouse-gas emissions at production-site granularity. The first tailwind is the **Corporate Sustainability Reporting Directive** (Dir. UE 2022/2464), which phases in reporting obligations between 2024 and 2028. The first wave (FY 2024, reports published in 2025) captures large public-interest entities that were already under the Non-Financial Reporting Directive: a population of roughly 200 Italian companies. The second wave (FY 2025, reports 2026) extends to all large companies satisfying two of three criteria — 250 employees, €50 M turnover, €25 M balance sheet — which Confindustria and CDP estimate at around 8 000 Italian entities. The third wave (FY 2026, reports 2027) adds listed SMEs, bringing the total to approximately 35 000 companies that will have to publish ESRS-compliant sustainability statements by 2028. Within that population, ESRS E1 on climate change is the anchor topical standard, because it is the only one both quantitatively measurable and evidence-driven, and because Scope 1 and Scope 2 emissions reporting is a prerequisite for the rest of the narrative (transition plan, metrics, targets, financial effects).
-
-The second tailwind is **Piano Transizione 5.0**, introduced by DL 19/2024 and operationalised by the decreto applicativo MIMIT-MASE of 24 July 2024 with GSE as the paying agent. The plan extends the earlier Piano Transizione 4.0 tax-credit regime to investments that combine Industry 4.0 equipment with demonstrable energy-efficiency improvements — energy reductions of ≥3 per cent at process level or ≥5 per cent at production-site level unlock credit bands that scale with reduction and spend, producing marginal rates of 5 to 45 per cent on qualifying outlays up to €50 M per company. The national envelope is approximately €6.3 B (PNRR allocation) on top of the residual Piano 4.0 balance, bringing the total 4.0+5.0 intervention to above €13 B. Uptake in 2024 was slow because the attestazione process demands calibrated baseline-vs-post-intervention measurement that most SMEs could not produce; this is precisely the product-market fit case for GreenMetrics. MIMIT and MASE have already signalled that the 2025 and 2026 tranches will be paid with a more aggressive calendar and stricter technical documentation — further widening the need for a measurement platform that outputs the attestazione in the exact format the paying agent expects.
-
-The third tailwind is **D.Lgs. 102/2014**, the Italian transposition of Directive 2012/27/UE, which has since 2015 required large enterprises (>250 employees or >€50 M turnover / >€43 M balance sheet) and all companies registered as "energivore" with CSEA to commission an independent energy audit every four years. The 2023 cycle's ENEA analysis counted roughly 11 000 audits filed, for about 8 500 obligated undertakings. The next cycle closes 5 December 2027, and the audit must meet EN 16247-1 (general) plus 16247-3 (processes) and/or 16247-4 (transport) as applicable. A rigorous audit depends on three-year energy-consumption history at a minimum, preferably sub-annual, and preferably per cost-centre; what often happens in practice is that the audit is stitched together from monthly invoices, producing an expensive but low-quality output. GreenMetrics short-circuits this: if the plant has been on the platform for 12+ months, the audit dossier is essentially a clicked export.
-
-Sector composition matters for sizing. The Verona province counts roughly 92 000 active enterprises in Chamber of Commerce data, of which some 13 500 are industrial (ATECO sections B, C, D, E) and roughly 1 400 are agri-industrial processors (ATECO 10-11). Applying the CSRD / 102/2014 size thresholds, a realistic upper bound of obligated undertakings in the province is on the order of 2 000–2 500. Nationally the equivalent numbers scale to roughly 35 000–45 000 obligated enterprises once the full CSRD perimeter phases in. A conservative TAM for GreenMetrics (priced at the Professionale tier average revenue per plant of ≈€24 000 / year, allowing for 10 connected meters per plant at €200/meter/month) therefore sits around **€840 M–€1.1 B per year in Italy** — a large and expanding envelope even if no customer ever upgrades to the Enterprise tier.
-
-The SAM (serviceable addressable market) that GreenMetrics can practically reach in its first 36 months is far smaller: concentrically, the Verona province (≈€50 M TAM), extending to Veneto and Lombardy (≈€250 M), and then the broader Northern-Italian industrial belt from Emilia-Romagna to Piemonte (≈€500 M). This is the perimeter the go-to-market plan focuses on in sections 9 and 10 below. A realistic SOM — "what we can take" — in the first three years, given a two-person-then-five-person sales org, is 0.5–1 per cent of the SAM, i.e. **€2–5 M ARR by year 3**. That is sufficient to be profitable at the Italian SaaS cost base and to attract Series-A growth capital on EU-sustainability theses.
-
-Competitive positioning must be explicit. At the top of the market, **Schneider EcoStruxure Resource Advisor**, **Siemens Sinalytics**, **ABB Ability Energy Manager**, **Honeywell Forge** and **Emerson Ovation Green** sell an enterprise ESG / energy-management layer bundled with automation and electrical-infrastructure products; pricing ranges from €50 k to several hundred thousand euros per plant per year, integration cycles run six to twelve months, and the Italian regulatory delta is treated as a report template rather than a first-class feature. Immediately below that tier, vendors like **BuildingIQ**, **GridPoint**, **Cadeler EneTools**, **Envizi (acquired by IBM)**, **Salesforce Net Zero Cloud**, **Microsoft Sustainability Manager**, **Watershed**, **Persefoni** and **Sweep** target corporate-sustainability owners with a heavy dashboarding and carbon-accounting flavour, but again with light Italian compliance muscle and with pricing indexed to employee count, which alienates SMEs. On the Italian side, **Enel X Way Business Energy Manager**, **A2A Smart City**, **Hera Smart Services**, **Edison EnergEnvision**, **Illumia Energia Sostenibile** and specialised ESCOs such as **Duferco**, **Edison Next** and **SunCity** are strong because of their utility relationship but are rarely willing to certify Piano 5.0 attestazioni produced for investments they did not sell; this creates a conflict-of-interest wedge GreenMetrics can exploit. Horizontal Italian BI / IoT plays (**InfluxData Italia partners**, **Almaviva**, **Engineering Ingegneria Informatica**, **Var Group**, **Digital Attitude**) position themselves as systems integrators rather than product vendors and usually subcontract the actual product to one of the international platforms above. GreenMetrics is therefore positioned as: **product-first, Italian-first, vendor-neutral**, with open SQL access to its Timescale store so that consulting partners and auditors can read the underlying data directly.
-
-SWOT, concise. Strengths: domain-native stack, Italian regulatory depth, transparent open-source product, Piano 5.0 commercial hook. Weaknesses: no utility billing relationship, no large pre-existing customer base, requires local-partner network to install gateways. Opportunities: the CSRD and Piano 5.0 deadlines are hard regulatory dates that every obligated undertaking must meet, creating forced buying windows; the residual-mix market-based disclosure is a data-heavy problem the existing tools largely ignore. Threats: utilities may bundle "free" energy-management with supply contracts; hyperscaler ESG platforms may commoditise the dashboard layer; ISPRA or GSE may change the attestazione templates mid-cycle and force a scramble.
-
-Pricing benchmarks, triangulated from RFP datasets and channel interviews. Entry-level energy-monitoring (10 meters, dashboards only) clears €50–150/meter/month. Mid-tier with reporting (CSRD E1 or ISO 50001 support) clears €200–500/meter/month. Enterprise-grade integrated ESG / energy management (Schneider, Siemens) starts at €2 000/meter/month or moves to per-MWh pricing above a threshold. GreenMetrics' €99 Starter and €249 Professionale tiers are priced aggressively at the bottom of the mid-tier range, on purpose: we want to win on TCO including the attestazione service, not compete on feature count.
+The remainder of this document lays out the market analysis, the engagement model, the technical architecture (post Pack extraction), the engagement lifecycle, scaling, security, infrastructure topology, hiring, GTM, financial framing, and operational handbook.
 
 ---
 
-## 3. Business Model & Revenue Strategy
+## 2. Market Analysis (preserved from v1)
 
-GreenMetrics monetises through three stacked streams: subscription (per-meter per-month), one-off regulatory deliverables (attestazione Piano 5.0, dossier CSRD E1, audit D.Lgs. 102/2014), and partner-channel share of implementation services. Each stream addresses a different buyer's budget line and together they form a margin-resilient mix that holds up when any one line is under pressure.
+The addressable market for GreenMetrics in Italy sits at the intersection of three policy tailwinds that are all accelerating simultaneously and all share the same underlying data requirement — namely, continuous and auditable measurement of energy consumption and greenhouse-gas emissions at production-site granularity.
 
-The subscription tiers are deliberately simple. **Starter** at €99 per meter per month up to ten meters targets the micro and small enterprise looking to instrument the main electrical cabin and a gas meter; it comes with Grafana dashboards, monthly consumption reports, basic alerts, and email support in business hours. **Professionale** at €249 per meter per month up to fifty meters targets the mid-sized plant that either is or is about to be obligated under CSRD or 102/2014; it bundles the CSRD ESRS E1 dossier generation and the Piano 5.0 attestazione, includes integration with Terna and E-Distribuzione, offers advanced anomaly detection, and carries a 99.5 per cent SLA with 24/7 support. **Enterprise** is a preventivo-based arrangement typically priced on annual spend (not per-meter) for multi-site industrial groups requiring SCADA / ERP integration, Scope 3 EcoInvent inclusion, on-prem or Italian-sovereign cloud hosting, a dedicated EGE consultant, and a 99.9 per cent SLA with business-critical support. The step from €99 to €249 intentionally crosses the regulatory-value threshold: above that line the product is paying for an obligation, not an analytical nice-to-have.
+### 2.1 The CSRD tailwind
 
-One-off deliverables are priced on the scale of the underlying regulatory filing and the work the GreenMetrics team or a certified partner performs to sign it off. The **Piano 5.0 attestazione service** is priced in a range from €3 500 for a small single-process intervention to €15 000 for a multi-site or multi-intervention project requiring EGE countersignature; the typical order value at midpoint is around €8 000. The **CSRD ESRS E1 dossier generation** service is priced between €5 000 and €50 000 per company per annum depending on the number of legal entities, the Scope 3 boundary, and the auditor involvement; a mid-sized industrial holding pays €15–25 k. **D.Lgs. 102/2014 audit preparation**, because it must be counter-signed by an ENEA-accredited EGE, is packaged at €6 000–12 000 per audit cycle. **Integration fees** for legacy meter networks — typically RS-485 Modbus chains, proprietary chart recorders, or vintage M-Bus runs — are priced at €120–180/hour, capped at a fixed-fee per site negotiated with the system integrator. These numbers are not aspirational; they sit inside the market range that MASE-accredited ESCOs already invoice for similar work and that the customer already expects to pay to a third party. Our argument is that doing it on-platform is faster, audit-ready, and usually cheaper.
+The first tailwind is the **Corporate Sustainability Reporting Directive** (Dir. UE 2022/2464), which phases in reporting obligations between 2024 and 2028. The first wave (FY 2024, reports published in 2025) captures large public-interest entities that were already under the Non-Financial Reporting Directive: a population of roughly 200 Italian companies. The second wave (FY 2025, reports 2026) extends to all large companies satisfying two of three criteria — 250 employees, €50M turnover, €25M balance sheet — which Confindustria and CDP estimate at around 8 000 Italian entities. The third wave (FY 2026, reports 2027) adds listed SMEs, bringing the total to approximately 35 000 companies that will have to publish ESRS-compliant sustainability statements by 2028. Within that population, ESRS E1 on climate change is the anchor topical standard, because it is the only one both quantitatively measurable and evidence-driven, and because Scope 1 and Scope 2 emissions reporting is a prerequisite for the rest of the narrative (transition plan, metrics, targets, financial effects).
 
-Unit economics make the case for the subscription-plus-services mix concrete. Take a Professionale customer with 15 connected meters, an average revenue per account of 15 × €249 × 12 = €44 820 per year, plus one Piano 5.0 attestazione per year at €8 000 and a CSRD dossier at €15 000, for a total of €67 820 / year / account. Gross margin on the subscription component is above 85 per cent (infrastructure, licenses, support). Gross margin on the one-off services is around 55 per cent (labour-heavy). Blended gross margin is around 75 per cent. Customer acquisition cost in the first 12 months is the hard number: with a go-to-market that leans on industry-body introductions (Confindustria Verona, Federesco, FIRE, ANIE, Assoege) and a two-person direct sales team supported by one SDR, we estimate blended CAC per closed Professionale customer at €9 500–12 500 in year one, falling to €5 500–7 500 by year three as the brand and the partner channel mature. Payback is therefore below 4 months at €67 k ARPA; LTV at 5-year average tenure and 2 per cent monthly churn (reasonable for regulation-linked contracts) is roughly €260 k gross profit per account, which is an LTV/CAC ratio comfortably above 20× — the stereotypical SME SaaS ratio is 3–5×, so the market structure is advantageous in our favour.
+### 2.2 The Piano Transizione 5.0 tailwind
 
-Pricing psychology. The Professionale price is intentionally a few percent below the quoted number the customer will hear from Schneider or Siemens for a comparable scope; the gap is large enough to signal a different budget category but small enough that the buyer does not perceive it as cheap. The inclusion of the attestazione service in the Professionale tier is the anchor: it converts a procurement discussion ("is this €249/m/month worth it?") into a regulatory-risk discussion ("what happens if we miss the 5.0 deadline?"). That framing moves the decision from IT/Operations into CFO, Sustainability, and Legal — the three buyers most likely to sign off on a €30–70 k contract in one quarter.
+The second tailwind is **Piano Transizione 5.0**, introduced by DL 19/2024 and operationalised by the decreto applicativo MIMIT-MASE of 24 July 2024 with GSE as the paying agent. The plan extends the earlier Piano Transizione 4.0 tax-credit regime to investments that combine Industry 4.0 equipment with demonstrable energy-efficiency improvements — energy reductions of ≥ 3% at process level or ≥ 5% at production-site level unlock credit bands that scale with reduction and spend, producing marginal rates of 5–45% on qualifying outlays up to €50M per company. The national envelope is approximately €6.3B (PNRR allocation) on top of the residual Piano 4.0 balance, bringing the total 4.0+5.0 intervention to above €13B. Uptake in 2024 was slow because the attestazione process demands calibrated baseline-vs-post-intervention measurement that most SMEs could not produce; this is precisely the engagement-fit case for GreenMetrics. MIMIT and MASE have signalled that the 2025 and 2026 tranches will be paid with a more aggressive calendar and stricter technical documentation — further widening the need for a measurement template that outputs the attestazione in the exact format the paying agent expects.
 
-Churn mitigation is driven by the regulatory dependency. Once a customer is using GreenMetrics for their audit 102/2014 cycle or their CSRD filing, switching cost approximates the cost of rebuilding three years of trend history elsewhere, plus retraining the auditor or the sustainability reporter on a different methodology — not something an energy manager signs up for voluntarily. To reinforce the natural stickiness we invest in: (i) quarterly compliance-health reviews with the customer; (ii) automatic ingestion of the annual ISPRA factor update, so the customer never has to think about it; (iii) a proactive "Piano 5.0 eligibility monitor" that pings the customer whenever their consumption pattern suggests a new attestazione opportunity. All three are outbound, not customer-initiated, which is consistent with how Italian SMEs actually use IT products.
+### 2.3 The D.Lgs. 102/2014 audit cycle tailwind
 
-Channels. Direct sales through a small Verona-based sales team is the primary motion. The partner channel is explicitly the second leg: (a) certified **EGE energy managers and ESCOs** co-sell the platform alongside their consulting mandates and receive a 20 per cent annualised revenue share on placed deals; (b) **commercialisti e studi di consulenza fiscale** with energivore clients are onboarded as referral partners with 10 per cent first-year commission (they care most about the Piano 5.0 credit and the audit 102/2014 deadline — both financial-calendar events they track anyway); (c) **auditor energetici certificati SECEM / FIRE** act as validators on the attestazione deliverables and carry GreenMetrics as their preferred data platform. A third leg is **gateway-integrator partners** (regional system integrators with long-standing Modbus / M-Bus wiring know-how) who handle the physical-layer install work and are paid through a set-hours rate-card. Taken together, the channel side is expected to account for roughly 40 per cent of new-logo revenue by year 3, with the remaining 60 per cent coming from direct sales.
+The third tailwind is **D.Lgs. 102/2014**, the Italian transposition of Directive 2012/27/UE, which has since 2015 required large enterprises (>250 employees or >€50M turnover / >€43M balance sheet) and all companies registered as "energivore" with CSEA to commission an independent energy audit every four years. The 2023 cycle's ENEA analysis counted roughly 11 000 audits filed, for about 8 500 obligated undertakings. The next cycle closes 5 December 2027, and the audit must meet EN 16247-1 plus 16247-3 (processes) and/or 16247-4 (transport). A rigorous audit depends on three-year energy-consumption history at a minimum, preferably sub-annual, and preferably per cost-centre. In practice the audit is often stitched together from monthly invoices, producing an expensive but low-quality output. GreenMetrics short-circuits this: if the plant has been on the platform for 12+ months, the audit dossier is essentially a clicked export.
 
-Revenue phasing and cohort analysis. Year 1 is a reference-customer year; we target 10 logo, roughly €600 k ARR, plus approximately €200 k of one-off services, for €0.8 M revenue. Year 2 is the inflection year with the first CSRD wave 2 closing; target 40 logos, €2.4 M ARR, €1.0 M services, €3.4 M revenue. Year 3 aligns with the second 102/2014 audit window; target 90 logos, €5.4 M ARR, €2.0 M services, €7.4 M revenue. These are aggressive but not unreasonable: the Verona SAM alone supports them, and the dual-phase of CSRD (wave 2 FY25 and wave 3 FY26) plus the 102/2014 cycle closing in Dec 2027 produces a hard deadline structure that suppresses deferrals.
+### 2.4 Sector composition
 
-Risk in the revenue model is concentrated in regulatory change. If the government delays the CSRD transposition schedule, our wave-2 motion slows. If Piano 5.0 is replaced with a successor plan that uses a different attestazione format, we need to rewrite the generator. Both are manageable — compliance-tool platforms routinely re-align with decrees — and we price a 12 per cent "regulatory-agility" buffer into our staffing plan to absorb the surface area.
+The Verona province counts roughly 92 000 active enterprises in Chamber of Commerce data, of which some 13 500 are industrial (ATECO sections B, C, D, E) and roughly 1 400 are agri-industrial processors (ATECO 10–11). Applying the CSRD / 102/2014 size thresholds, a realistic upper bound of obligated undertakings in the province is on the order of 2 000–2 500. Nationally the equivalent numbers scale to roughly 35 000–45 000 obligated enterprises once the full CSRD perimeter phases in.
 
-Contract structure. We use a two-part commercial agreement: a framework Master Services Agreement (MSA) that carries the standard terms (SLA, data-processing, liability caps, termination for cause), and an Order Form per site or per deliverable. The MSA is GDPR-DPA compliant, has an explicit Italian-law / Verona-court jurisdiction clause, and specifies that the customer owns all data ingested and generated through the platform — GreenMetrics acts only as a data processor under Art. 28 GDPR. Subscription Order Forms carry a 12-month auto-renew with 60-day notice for non-renewal; one-off service Order Forms are milestone-priced with 30-60-10 per cent invoicing (kickoff / draft delivery / acceptance). Payment terms are 30 days for subscription, 15 days for services; a 2 per cent early-payment discount is offered to accelerate working-capital turnover in the Italian context where invoice-factoring is expensive.
+### 2.5 TAM / SAM / SOM under the engagement model
 
-Compliance calendar as a sales tool. Every quarter the customer-success team produces a "compliance clock" for each active account — a one-page document showing when the next CSRD filing is due, when the 102/2014 audit window opens, which Piano 5.0 claim windows are approaching, and which Conto Termico calls match the site profile. This is deliberately a non-technical artifact pushed to the customer's CFO and sustainability lead; it surfaces up-sell opportunities (additional meters, additional one-off dossiers) while positioning the platform as the anchor of the customer's regulatory calendar rather than just a data tool. The operational cost of producing the clock (one CSM hour per account per quarter, automated to 80 per cent from the platform's existing data) is negligible, but its impact on ARR-expansion is material: customers who receive the clock consistently show 18–22 per cent annual up-sell rates versus 8–10 per cent for those who do not.
+Under v1's SaaS framing, TAM was sized at €840M–€1.1B/year priced at €24k/year average. Under v2's engagement model, the right framing is *engagement-eligible companies* — the count of industrial sites that need the regulatory deliverables we ship and have a budget consistent with our €100k–€500k engagement band. Of the 35 000–45 000 nationally-obligated industrial enterprises, the subset with capex programs in the Piano-5.0-relevant €500k–€2M range and the procurement maturity to engage a regulator-grade template is on the order of 5 000–8 000 sites in the 36-month plan horizon. SAM over the same horizon is the Veneto + Lombardy + Emilia-Romagna + Piemonte arc, ~2 500 sites. SOM is what the engagement-team hire plan in §9 supports — 5 engagements through Phase 5 by end of Phase J, scaling to 15–25 engagements/year by Y3 of the engagement business.
 
----
+### 2.6 Competitive positioning (preserved from v1, sharpened)
 
-## 4. Technical Architecture
+Global enterprise ESG platforms target Fortune-500 multinationals, price in five or six figures per site per year, require six-month integrations, and address Italian regulation only as a localisation afterthought. National competitors are usually vertically integrated with a utility or an ESCO relationship, which is great for their own energy-service contracts but adds a procurement layer the customer frequently does not want. GreenMetrics slots between the two: a vendor-neutral, Italian-domiciled specialist, delivered as a forkable template rather than a hosted multi-tenant service.
 
-The GreenMetrics stack is built from five concerns, each of which dictates a discrete technical choice. Ingestion of high-cardinality, high-frequency meter data requires an efficient, concurrent, low-overhead runtime; that is why the backend is written in **Go with the Fiber framework**. The data-layer constraints — time-series volumes in the tens of billions of samples per tenant per year, with on-line rollups needed to meet interactive-dashboard latency SLOs — are exactly the scenario TimescaleDB was built for, which is why we standardise on **TimescaleDB with PostgreSQL 16** rather than rolling a pure relational schema. The reporting and operator UI needs a small, fast, accessible surface that avoids the weight of Next.js or the context-switch of Angular; **SvelteKit 2** with Tailwind gives us a sub-50 KB critical-path payload and a development velocity consistent with a six-month MVP schedule. For operator-centred dashboarding we lean on **Grafana**, provisioned from declarative JSON in the repository, because operators in Italian industrial plants already recognise it and because its PostgreSQL datasource speaks Timescale natively. Finally, the regulatory-reporting pipeline is implemented inside the Go backend as a pure service module, with versioned emission factors and jsonb payload storage, so that auditors can reconstruct any report from the source data at any point.
+The full competitive matrix — 30+ competitors across 9 tiers — is in `docs/COMPETITIVE-BRIEF.md`. The TL;DR five-beat-points: (i) audit-grade reproducibility, (ii) OT-native ingestion, (iii) Italian-first regulatory depth, (iv) modular template, not SaaS, (v) engineering doctrine as part of the deliverable. Each beat-point is doctrine-backed (per the Doctrine section/rule references in the brief).
 
-The high-level data flow is as follows. A **meter** — electrical, gas, thermal, water, PV inverter, or EV charger — is read by either an on-premises edge gateway (running a lightweight ingestor that speaks Modbus RTU over RS-485, Modbus TCP over LAN, M-Bus over a dedicated serial master, SunSpec over Modbus, or OCPP over WebSocket) or by a cloud-side pull from an Italian DSO portal (E-Distribuzione SMD, Terna Transparency, SPD multi-DSO). The ingestor funnels normalised `{ ts, tenant_id, meter_id, channel_id, value, unit, quality_code, raw_payload }` rows into the Go backend's `/api/v1/readings/ingest` endpoint, which performs a `pgx` bulk COPY into the `readings` hypertable. TimescaleDB's chunk policy is a 1-day chunk interval, which balances selectivity on recent-data queries against chunk-count management; the compression policy compresses chunks older than 7 days, achieving 10–20× size reduction on typical meter traffic. Continuous aggregates defined in migration `0003_continuous_aggregates.sql` roll the raw data up to 15-minute, 1-hour and 1-day buckets; the refresh policy for the 15-min aggregate is every 15 minutes, for the 1-hour aggregate hourly, and for the daily aggregate daily, which keeps the rollup storage lag predictable. Retention policies drop raw rows after 90 days, 15-min aggregates after 1 year, 1-hour aggregates after 3 years, and daily aggregates after 10 years, which satisfies the regulatory-retention minimums for CSRD and 102/2014 while keeping storage tractable.
+### 2.7 SWOT, post-pivot
 
-Queries served to the frontend and to Grafana read from the appropriate aggregate view, not from raw readings: a dashboard covering the last 7 days on a 15-minute granularity reads `readings_15min`; a year-over-year comparison reads `readings_1d`. The carbon calculator runs a similar query pattern but joins versioned `emission_factors` at the temporal midpoint of the query window, so that a factor revision (e.g. the April release of the ISPRA annual report updating the Italian mix from 0.250 to 0.245 kg CO2e/kWh for the previous year) is retroactively applied to subsequent queries without rewriting the raw data — a crucial property for audit reproducibility.
+- **Strengths:** doctrine-grade engineering, Italian regulatory depth, OT-native ingestion across 7 (now) → 12 (Phase G) protocols, transparent template / source available to engaged client, engagement-margin economics not dependent on meter count, regulatory-deliverable services as a high-margin add-on.
+- **Weaknesses:** single-operator business at the start (mitigated by Phase H engagement-team hire), no large pre-existing customer base, requires local partner network to install gateways at scale (mitigated by §9 channel partners), no AGID Qualificazione Cloud per la PA yet (Phase J Sprint S21–S22 deliverable).
+- **Opportunities:** the CSRD wave-2/wave-3 deadlines and the 102/2014 December 2027 audit window create a forced-buying calendar; the Italian utility-bundled offerings have a structural Piano-5.0 conflict-of-interest we exploit; partner ESCOs and EGE consultants need an audit-grade platform underneath their consulting work.
+- **Threats:** utilities may bundle "free" energy management with supply contracts; hyperscaler ESG platforms may commoditise the dashboard layer; ISPRA or GSE may change the attestazione templates mid-cycle and force a Pack release. Mitigations: vendor-neutral story, doctrine-grade signal-vs-noise differentiation, annual Pack review cadence per Rule 138.
 
-The API surface is versioned at `/api/v1` and documented in `docs/API.md`. Authentication is JWT over HTTPS: access tokens are short-lived HS256-signed tokens (15 min default), refresh tokens are 30-day revocable tokens, the `sub` claim carries the user email, `tenant_id` carries the tenant UUID, and `role` carries the RBAC role (`admin`, `manager`, `operator`, `auditor`, `readonly`). Every protected endpoint passes through `JWTMiddleware` in `internal/handlers/auth.go`, which validates the token and populates `c.Locals("tenant_id")` and `c.Locals("user_role")`. Authorisation is applied by handler-level role checks; a future iteration (v1.2) moves this to a centralised policy engine (Open Policy Agent). Every handler sets the RFC 7807 problem-details JSON structure on failure and an `X-Request-ID` header via `requestid` middleware that is carried end-to-end through Fiber, the repository, and the logs.
+### 2.8 Pricing benchmarks (engagement-model-aligned)
 
-Database schema overview, summarised here and detailed in `docs/ARCHITECTURE.md`. The core tables are `tenants`, `users`, `meters`, `meter_channels`, `reports`, `alerts`, `audit_log` (all standard PG), the `emission_factors` lookup with a temporal primary key `(code, valid_from)`, and the `readings` hypertable plus its three continuous-aggregate children. Soft-delete is implemented on `tenants` and `users` via `active` columns; hard delete is never performed in production to satisfy GDPR right-of-erasure via crypto-shredding on a periodic job. Audit log is append-only, keyed by `(tenant_id, ts)` for partition-aware queries.
+Triangulated from RFP datasets and channel interviews. Entry-level energy-monitoring (10 meters, dashboards only) clears €50–150/meter/month at the SaaS competitor band — that's not what we sell. Mid-tier with reporting (CSRD E1 or ISO 50001 support) clears €200–500/meter/month at the SaaS competitor band — also not what we sell. Enterprise-grade integrated ESG / energy management at the Schneider / Siemens band starts at €2 000/meter/month or moves to per-MWh pricing above a threshold — and *crucially* requires a 6-month integration and a proprietary-stack lock-in.
 
-Security architecture follows the cross-cutting baseline (Section 12 of the portfolio standards) and adds one explicit concern unique to GreenMetrics: the sensitivity of **metered consumption data** under AEEGSI (now ARERA) deliberation 646/2015 and subsequent updates, which classifies near-real-time consumption data for the residential market as personal data subject to GDPR even when the POD is owned by a legal entity. We therefore encrypt `raw_payload` at rest using field-level encryption (AES-256-GCM with a per-tenant key wrapped by a KMS master key), and we TLS-pin the connection from each edge gateway to the ingestion endpoint so that the consumption stream cannot be passively observed by a local infrastructure compromise. The integration with E-Distribuzione SMD uses mTLS with a client certificate issued to the tenant through the Servizio Portale Distribuzione (SPD) process; the certificate is stored under the path referenced by `SPD_CLIENT_CERT_PATH` in the .env and is never logged.
-
-Scalability patterns. A single TimescaleDB primary comfortably handles 50–100 000 meters per tenant — Timescale's public benchmarks place the ceiling around 1 M inserts/s on a well-sized node. Beyond that envelope we plan for (i) horizontal scale-out via Timescale's multi-node architecture, with the dispatcher node handling query routing and worker nodes owning chunks by tenant; (ii) read replicas in the same AWS region (eu-south-1 Milan) to serve Grafana and the export-heavy auditor use-case without contending with ingestion writes; (iii) a dedicated "cold" storage tier (S3-backed via `pg_partman` + `pg_mooncake`) for aggregates older than five years, which the retention policy will migrate to on a schedule. Cache hierarchy: we intentionally do not introduce a Redis layer in front of Timescale for the dashboard case, because the continuous aggregates already behave like a materialised cache; however, the Go service keeps an in-process LRU cache of the active emission-factor set with a 5-minute TTL, which is the dominant hot read path in `/reports` and `/carbon`.
-
-Failure modes and consistency. The ingestion path is at-least-once: the edge gateway buffers locally and retries on backoff when the backend is unreachable; a `(tenant_id, meter_id, channel_id, ts)` de-duplication index is not enforced at the DB level (too expensive) but the repository's bulk-copy path is idempotent within a replay window by virtue of the `quality_code` marker. Report generation is at-most-once per request: reports are stored in the `reports` table with a `status` column transitioning through `draft → generated → submitted → accepted | rejected`, and submission to a third-party portal (GSE, ENEA) is idempotent with a `portal_ref` stored on success. Alerts follow a "fire-once per rule-fingerprint per cooldown" semantics implemented in the alert engine's state table (not shown in the migrations — a v1.1 addition). The cross-cutting consistency model is that the "book of record" is always the raw `readings` hypertable; aggregates and reports are derived and can be recomputed.
-
-Observability. The backend emits structured JSON logs via zap, OTLP/gRPC traces via opentelemetry-go to a configured collector, and Prometheus exposition on `/api/internal/metrics`. Every inbound request carries an `X-Request-ID` that is attached to the log context; the Fiber `otelfiber` middleware creates a span for each request which wraps the subsequent repository and service spans. Grafana provisioning ships with two dashboards (`energy-overview.json` and `carbon-dashboard.json`) and a PostgreSQL datasource pointing to the same TimescaleDB the backend uses; the datasource is flagged `timescaledb: true` which unlocks the Timescale-specific helpers in Grafana's SQL editor.
-
-Multi-tenancy is enforced at the repository layer. Every repository method takes a `tenantID` argument and encodes it into the SQL predicate; there is no "sudo" path that bypasses the tenant filter. A per-tenant row-level-security policy is optional (enabled via `ROW_LEVEL_SECURITY_ENABLED=true` env flag) and adds a Postgres RLS policy on each table that matches `tenant_id = current_setting('app.current_tenant')::uuid`; the Go repository sets `SET LOCAL app.current_tenant = $1` on every transaction when RLS is on. The default off state is appropriate for self-hosted single-tenant deployments; the on state is the shared-cloud default.
-
-Concurrency design deserves explicit treatment given the Go choice. Fiber's underlying fasthttp server uses goroutine-per-request with a bounded worker pool; we tune the pool size to (CPU cores × 256) as the upper bound, with per-handler soft limits applied by a custom middleware when the handler is write-bound (ingestion path) versus read-bound (dashboard queries). The pgx connection pool is sized to (2 × GOMAXPROCS) + spare, with separate pools for the ingestion workload and the read workload to prevent a slow analyst export from starving real-time inserts. The `report_generator` module runs CPU-intensive aggregate reductions; we gate it behind a semaphore with a per-tenant fairness queue so that a large tenant generating a multi-year ESRS E1 dossier cannot freeze the generator for the rest of the tenant pool. OTel span sampling is configured at 10 per cent default with a head-based override: every request that returns non-2xx is sampled at 100 per cent, so error traces are never dropped.
-
-Schema versioning and migration strategy. The `migrations/` directory uses a numeric prefix convention (`0001_`, `0002_`, …) so that the order is lexicographically obvious. Each migration is idempotent via `IF NOT EXISTS` clauses and safely re-runnable. We apply migrations through a lightweight `migrate` target in the Makefile that invokes `psql` sequentially; production deployments use `golang-migrate/migrate` with a per-environment state table. Backward-compatibility constraints are enforced in code review: no column is removed without a two-release deprecation window, no enum value is reused, and continuous-aggregate views are never altered in place (a new view is created with a suffixed name and the old view is dropped only when no dashboard references it). TimescaleDB-specific concerns — chunk-interval changes, segmentby reordering, compression-policy replacement — are batch-executed during the November engineering freeze and always tested against a 90-day production-shape dataset in staging.
-
-Internal-tooling pipeline. We ship two developer-facing CLIs (`gmctl` for admin operations against a running cluster, `gmsim` for synthetic-load generation against a dev environment). `gmctl` covers tenant provisioning, emission-factor imports, and one-shot report regeneration; `gmsim` replays a reference load profile derived from a 30-day anonymised slice of our reference customer's consumption curve. Both tools are kept under `internal/cmd/` and are not shipped in the production distroless image; their role is purely internal ops.
-
-Integration with Terna and E-Distribuzione merits a separate paragraph because the external surface is the part most likely to be externally audited. The `SmartMeterClient` in `internal/services/smart_meter_client.go` exposes two concrete methods: `FetchEDistribuzioneCurve` for per-POD 15-minute consumption curves, and `FetchTernaNationalMix` for the daily national electricity-generation mix. The E-Distribuzione path authenticates against the B2B portal using OAuth 2.0 client-credentials issued through the Portale SMD onboarding process; the Terna path is a public API that requires no authentication for the Transparency dataset but is rate-limited per IP. Both methods carry graceful degradation: if the external dependency is unavailable, the method returns a stub value rather than propagating the error, so a scheduled pull does not bring down the ingestion pipeline. All DSO integrations are documented to the customer as a specific onboarding phase with a 4–6 week calendar expectation; this sets realistic expectations and is consistent with the actual DSO portal timelines.
+GreenMetrics' engagement-model pricing in §3 is structured to land at *less than the equivalent 5-year cost* of a Schneider / Siemens deployment at any given site complexity, while delivering audit-grade reproducibility, transparent source, and a 8–14 week Phase 0–5 timeline. The buyer's procurement compare is not "is this €249/meter/month worth it?"; it is "is a €280k engagement delivering audit-grade Piano 5.0 + CSRD E1 + audit-102 + 5 sites onboarded in 12 weeks worth it vs. €1.2M for Schneider over 5 years?"
 
 ---
 
-## 5. Development Roadmap
+## 3. Engagement Model & Revenue Strategy
 
-The roadmap is organised in four phases over a 24-month horizon, with the four phases aligned to the two calendar events that drive buyer behaviour (the CSRD filing calendar and the D.Lgs. 102/2014 audit cycle) rather than to engineering preferences.
+GreenMetrics monetises through four stacked streams: engagement license, customisation services, annual maintenance, and (optional) tier retainer. Each stream maps to a different commercial obligation and together they form a margin-resilient mix that holds up under engagement-portfolio expansion.
 
-### Phase 1 — Core Metering & Dashboards (Month 0–4)
+### 3.1 Engagement license (one-time)
 
-The MVP scope in Phase 1 is the shortest path to a paying Starter customer. Engineering delivers the Fiber backend with the meters/readings/alerts/auth endpoints, the TimescaleDB hypertable with 15-min and 1-hour continuous aggregates, the Modbus TCP ingestor (covering the bulk of the installed industrial electricity meter base — Carlo Gavazzi EM24, Socomec Countis, Lovato DMG, Schneider PowerLogic PM3250), the M-Bus stub (returning the well-formed frame that a downstream integrator can wire up in Phase 2), the landing page, and the Grafana energy-overview dashboard. Sprint cadence is two-week, and the three sprints inside Phase 1 are: (S1) backend skeleton, database migrations, auth; (S2) Modbus ingestor, hypertable + aggregates, Grafana dashboard; (S3) SvelteKit console (meters / readings / dashboard), landing page, Dockerfile hardening, first end-to-end test. MoSCoW classification for this phase puts everything listed here in the Must category; nothing else belongs here. Technical-debt budget allowance is 15 per cent, deliberately tight, to force discipline in a short phase. Success criteria: five paying Starter customers on-boarded by end of month 4.
+Grants the client perpetual right to use the version of the template delivered. Sized at a percentage of the engagement project budget. Typical band:
 
-### Phase 2 — CSRD ESRS E1 + Piano 5.0 Attestazione (Month 4–10)
+- **Light engagement** (1 site, 1 Region Pack already in catalogue, 3–5 Protocol Packs already in catalogue, 1 Report Pack stack — e.g. just CSRD E1 + monthly_consumption): **€40k–€80k**.
+- **Standard engagement** (2–3 sites, 1 Region Pack, 5–7 Protocol Packs, 4 Report Packs — e.g. CSRD E1 + Piano 5.0 + Conto Termico + audit-102): **€80k–€140k**.
+- **Complex engagement** (4+ sites, multi-Region-Pack, 7+ Protocol Packs, 5+ Report Packs, Identity Pack work, integration with the client's existing SCADA / ERP / SIEM): **€140k–€220k**.
+- **Strategic engagement** (an industrial group with 10+ sites, custom Pack development, hybrid topology, fully-managed retainer): **€220k–€500k+**.
 
-Phase 2 is the revenue-unlock phase. Engineering delivers the full reporting module — `report_generator.go` with `buildESRSE1`, `buildPianoTransizione50`, `buildContoTermico`, `buildCertificatiBianchi`, `buildAuditDLgs102` — and the frontend flows to invoke and download those reports. The Piano 5.0 attestazione is the centrepiece: the algorithm compares the baseline window (the 12 months preceding the investment, normalised for production volume and heating-degree-days per EN 16247-3) to the post-intervention window (the 12 months following commissioning) and outputs the energy-saving percentage at both process and site level, the applicable credit band, and the expected EUR credit on the eligible spend. The CSRD ESRS E1 module outputs a JSON dossier that maps to each ESRS E1 disclosure requirement (E1-5 energy consumption, E1-6 scope-categorised emissions, E1-7 intensity metrics, E1-8 GHG removals and mitigation projects) and can be exported as both JSON (for downstream auditor ingest) and a formatted PDF (for the Non-Financial Statement appendix). Sprint cadence remains 2-week; six sprints fill the phase. MoSCoW: Must = Piano 5.0 attestazione, ESRS E1 JSON output; Should = ESRS E1 PDF, Conto Termico 2.0, Certificati Bianchi TEE; Could = Audit 102/2014 (moved to Phase 3 if slippage); Won't this phase = Scope 3. Success criteria: 20 Professionale customers, first five Piano 5.0 attestazioni filed through GSE.
+The license is *structural*: it pays for the 36 weeks of engineering investment behind v1.0.0, the doctrine, the conformance suite, the runbook catalogue, and the supply-chain attestation that no greenfield build could deliver in the engagement timebox. It is sold once at the start of the engagement; a renewal of the engagement (e.g. major upgrade to v2.0.0) re-prices.
 
-### Phase 3 — Scope 3 & Supply-Chain Visibility (Month 10–16)
+### 3.2 Customisation services (T&M)
 
-Phase 3 addresses the ESRS E1-9 "anticipated financial effects" and the Scope 3 categories that matter most for Italian manufacturers (Category 1 purchased goods, Category 4 upstream transport, Category 11 use of sold products for machinery vendors). Engineering integrates an EcoInvent-compatible LCA database wrapper (we do not ship EcoInvent itself — license restrictions — but we integrate with the customer's own EcoInvent license via a connector), adds a spend-import module that accepts invoices from FatturaFlow-compatible feeds to derive Scope 3 Category 1 estimates, and builds the Scope 3 supplier-scorecard UI. A complementary sub-stream extends the meter-type coverage to cover compressed-air systems (kWh equivalent via flow-meter + isentropic model), chilled water (BTU/h), and steam (via mass-flow). MoSCoW: Must = Scope 3 Category 1 + Category 4; Should = Scope 3 Category 11; Could = advanced allocation engine (ABC costing); Won't = Scope 3 Cat 15 financial emissions. Success criteria: 50 Professionale customers; 5 Enterprise logos.
+Time-and-materials billing against the engagement scope. Typical band €60k–€300k for the customisation sprint and Pack assembly. Includes:
 
-### Phase 4 — AI Forecasting & Flexibility (Month 16–24)
+- engineering labour (3–6 weeks Phase 2 Pack Assembly + 2–4 weeks Phase 3 Customisation + 2 weeks Phase 4 Hardening & Soak + 1 week Phase 5 Handover);
+- the Macena team's domain advisory (energy-management expertise from the engagement-advisor hire planned for Phase H);
+- the regulatory-pack signoff by an EGE-certified partner where applicable (counter-signature work is itself billable to the client per the underlying regulatory-deliverable rate-card).
 
-Phase 4 introduces two AI-adjacent capabilities. The first is a consumption forecaster built on a hybrid LightGBM + seasonal-ETS model that ingests weather (from Terna's ARERA-compliant weather feed for the customer's region), production plan (from the ERP), and historical Timescale data to produce a 24-hour and 7-day forward consumption curve at 15-minute resolution; forecast error is evaluated against the MAPE target of ≤12 per cent at day-ahead and ≤25 per cent at week-ahead. The second is a flexibility-market connector: we enable the customer to expose peak-shaving commitments into the Italian MSD (Mercato del Servizio di Dispacciamento) via an aggregator partner, with settlement reconciliation flowing back into the reports module. MoSCoW: Must = day-ahead forecast; Should = peak-shaving simulator; Could = MSD connector (depends on aggregator partnership); Won't = trading-floor UI (scope creep). Success criteria: 90 Professionale customers, 10 Enterprise logos, €7.4 M ARR.
+Customisation services are billed milestone-based — 30% kickoff, 60% draft delivery, 10% acceptance — to align cash flow with delivery progress.
 
-Across the phases a universal technical-debt budget of 15–20 per cent of engineering capacity is reserved for platform work: observability upgrades, dependency bumps, TimescaleDB version migrations, test-coverage improvements, and the periodic refresh of the emission-factor seed as ISPRA publishes new annual revisions. The engineering calendar is frozen during the November–January CSRD-filing and audit-submission windows; no customer-facing schema changes ship in those months.
+### 3.3 Annual maintenance (T1+)
 
-Release-management specifics. We run a two-week release train. The train cuts from `main` every other Thursday; the staging deploy happens Thursday evening; integration tests run overnight; production deploy is Monday morning behind a feature flag. Rollback is a single command revert on the deployment manifest, made possible by the Docker-image-per-commit pattern in the CD pipeline. Feature flags are managed in a simple Postgres-backed table (`feature_flags` with `(tenant_id, flag, value)` tuples) which is synchronously read on every request; a 5-minute process cache prevents the read from being hot. A flag is considered "alive" for at most three releases (6 weeks); older flags are mechanically removed in a planned debt-reduction sprint.
+Annual subscription including Pack updates as the regulatory landscape evolves (e.g., ISPRA factor table is republished every April; GSE Conto Termico XSD updates), security patches against the Rule-59 SLA, and major-version migration assistance. Sized as a percentage of license. Typical 18–22%. Maintenance attach rate target ≥ 90% of T1 closures.
 
-Dependency-management policy. Go dependencies are pinned in `go.mod` with Dependabot weekly updates; semantic-version bumps are auto-merged after green CI; major-version bumps require engineering review. npm dependencies on the frontend are pinned through `package-lock.json` with the same Dependabot cadence. We explicitly avoid the "tip" of any major upstream project; Fiber stays on the 2.x line (stable), TimescaleDB on the 2.x line aligned with Postgres 16, SvelteKit on 2.x. Experimental upstream features are adopted only after a 6-month observation window.
+### 3.4 Co-managed retainer (T2 only)
 
-Data-migration runbook for schema evolutions. Every migration that touches the hypertable or a continuous aggregate is reviewed against a five-point checklist: (1) is the change idempotent? (2) is the chunk-level lock held for <60 s? (3) can it run online with replication? (4) is there a rollback SQL file? (5) does it require a dashboard or API version bump? Migrations that fail any point are split into smaller PRs or postponed to a maintenance window. This discipline is the reason we avoid in-place hypertable alterations — they frequently violate point 2 on production-shaped data.
+Fixed monthly fee buying named on-call hours, SLA, quarterly reviews. Typical band €4k–€12k/month per deployment. Buys: the Macena team retains shared on-call after handover; SLA ≤ 99.5% on key user journeys; quarterly review with the operator team; Pack updates and security patches included; no surprise per-incident charges.
 
-Testing pyramid in practice. The 70/20/10 split plays out across three test suites: `backend/tests/` with `*_test.go` files for the unit tier, `backend/tests/integration/` with docker-compose fixtures for the integration tier, and `tests/e2e/` at repo root for Playwright-driven end-to-end scenarios that exercise the full stack. The integration suite boots a TimescaleDB container, runs the migrations, seeds a reference tenant with 24 hours of synthetic readings, and exercises every handler against that data; it completes in under four minutes on a laptop-class machine. The E2E suite covers five critical journeys: login → dashboard load, meter creation, readings ingest, report generation (Piano 5.0), alert acknowledge. Performance tests use k6 against a staging replica with 1×/5×/10× production traffic shape; budget assertions are P95 < 250 ms for the dashboard aggregate query and P99 < 2.5 s for report generation on a 1-year window.
+### 3.5 Fully-managed retainer (T3 only)
+
+Fixed monthly fee buying full operations on a hosting platform of the client's choice (AWS eu-south-1, Aruba Cloud, GCP eur-west, on-prem K3s in the client's DC). Typical band €18k–€55k/month per deployment. Buys: SLA ≤ 99.9%; capacity planning; cost optimisation; regulatory-update tracking; audit-evidence pack production. Ideal for clients buying outcomes, not infrastructure.
+
+### 3.6 Regulatory-deliverable services (one-off, transactional)
+
+The EGE-countersigned Piano 5.0 attestazione, the CSRD ESRS E1 dossier review, the D.Lgs. 102/2014 audit countersignature. Priced as in v1 — €3.5k–€15k for Piano 5.0 attestazione (midpoint €8k), €5k–€50k for CSRD ESRS E1 dossier, €6k–€12k for audit 102/2014 — but delivered through the engagement deployment, not as a separate SaaS feature. These are a recurring revenue line on every active deployment.
+
+### 3.7 What we deliberately do not sell
+
+- We do not sell per-meter monthly subscriptions. The unit of sale is the engagement; the deployment then handles however many meters the client needs at no marginal-revenue model cost to us.
+- We do not sell "use the template free, pay for support." The template is not free under the proprietary licence; the engagement license is the entry charge.
+- We do not sell access to a centrally-hosted multi-tenant instance for many SMEs. Multiple SMEs can share a deployment if a partner ESCO or system integrator wants to host them, but that's the partner's monetisation, not ours.
+- We do not sell unbundled Packs to third parties. Packs are part of the template's value; selling them à la carte invites quality erosion.
+
+### 3.8 Margin profile target
+
+Engagement margin (gross) target ≥ 65% on T1 handovers, ≥ 55% on T2 co-managed, ≥ 45% on T3 fully-managed. The mix shifts toward T2/T3 over the engagement's lifetime as the operator team's risk-tolerance for self-operation declines and the regulatory exposure grows. Annual maintenance attaches at ≥ 90% of T1 closures.
+
+### 3.9 Engagement KPIs (replaces SaaS metrics)
+
+- **Engagement margin.** Gross margin per engagement, computed on a per-engagement P&L (revenue minus engineering + advisory + EGE costs).
+- **Time-to-customisation.** Calendar time from SoW signing to Phase 5 Handover. Target median 11 weeks; long-tail 14–18 weeks for multi-site. Phase-overrun beyond 16 weeks is a Sev-2 commercial event.
+- **Template-fit-score.** A subjective 1–5 rating from the engagement lead at Phase 5 measuring how well the template (Core + existing Packs) fit the engagement; a 1–2 rating triggers a Pack-or-doctrine evolution proposal. Aggregate target: ≥ 4 across the portfolio.
+- **Net-engagement-value.** License + customisation + 5-year-maintenance + 5-year-tier-retainer projection, minus delivery cost. Used to compare engagements at the portfolio level.
+- **Annual-maintenance-attach rate.** Percentage of closed engagements that take annual maintenance. Target ≥ 90% on T1; ≥ 95% on T2/T3.
+- **Engagement-portfolio velocity.** Engagements through Phase 5 per quarter. Target Q4 2026 = 1 (synthetic), Q1 2027 = 2 (first two real), Q2–Q4 2027 cumulative ≥ 5.
+- **Pack-catalogue contribution rate.** Engagements per quarter that contribute at least one generalised Pack back upstream. Target ≥ 50% (every other engagement should improve the template).
+
+### 3.10 Channel partners (preserved from v1, reframed)
+
+Three legs of channel partnership:
+
+- **EGE (energy-management experts) and ESCOs.** Co-sell the platform alongside their consulting mandates. Engagement-margin share: 15–20% on placed deals; the partner is the engagement-lead-of-record; Macena delivers the technical engagement underneath.
+- **Commercialisti and Italian fiscal consulting.** Refer engagements where a client is heading toward Piano 5.0 or audit 102/2014 deadlines. Referral commission: 5–10% on first-year engagement license.
+- **System integrators (regional Modbus / M-Bus / SunSpec wiring expertise).** Subcontract on Phase 2 Pack Assembly hardware-side work; paid through a set-hours rate-card. The system integrator owns the physical install; Macena owns the platform.
+
+By Y3 of the engagement business, ~35–40% of new engagement-license revenue is expected to come through these channels. Channel partners receive engagement-team training, access to the upstream template via a partner license, and quarterly portfolio reviews.
+
+### 3.11 Compliance calendar as a sales tool
+
+Every quarter the engagement team produces a "compliance clock" for each active engagement — a one-page document showing when the next CSRD filing is due, when the 102/2014 audit window opens, which Piano 5.0 claim windows are approaching, and which Conto Termico calls match the site profile. This is a non-technical artifact pushed to the engagement client's CFO and sustainability lead; it surfaces opportunities for additional Packs / additional sites / additional regulatory deliverables while positioning the deployment as the anchor of the client's regulatory calendar.
 
 ---
 
-## 6. Scaling Strategy
+## 4. Technical Architecture (post Pack extraction)
 
-Scaling is planned along three dimensions: traffic (meter-read ingestion throughput), data volume (time-series storage), and geographic reach.
+The GreenMetrics stack is built from five concerns, each of which dictates a discrete technical choice. Ingestion of high-cardinality, high-frequency meter data requires an efficient, concurrent, low-overhead runtime; that is why the backend is written in **Go with the Fiber framework**. The data-layer constraints — time-series volumes in the tens of billions of samples per tenant per year, with on-line rollups needed to meet interactive-dashboard latency SLOs — are exactly the scenario TimescaleDB was built for, which is why we standardise on **TimescaleDB with PostgreSQL 16**. The reporting and operator UI needs a small, fast, accessible surface that avoids the weight of Next.js or the context-switch of Angular; **SvelteKit 2** with Tailwind gives us a sub-50KB critical-path payload and a development velocity consistent with engagement timeboxes. For operator-centred dashboarding we lean on **Grafana**, provisioned from declarative JSON in the repository. Finally, the regulatory-reporting pipeline is implemented as Pure-Function Builders inside Report Packs, with versioned emission factors from Factor Packs and signed JSONB payload storage, so that auditors can reconstruct any report from the source data at any point.
 
-The first axis — traffic — is the one that moves first. A typical Professionale customer ingests on the order of 15 meters × 3–6 channels per meter × one sample every 15 minutes = 50 000–200 000 samples per day per customer. Across 100 customers in steady-state that is 5–20 M samples/day per region, or 60–230 samples/second average with spikes in the morning start-up window up to 5–10× average. The backend's Fiber + pgx stack handles that comfortably on a single 4-vCPU node — Fiber's low allocation profile is the relevant technical feature here. When we cross 1 000 concurrent customers we plan for: (i) a front-door load-balanced deployment with 3–6 backend replicas behind an application load balancer; (ii) a dedicated ingestion pool separated from the query pool so a spike on one side cannot starve the other; (iii) an asynchronous upload path using a lightweight queue (NATS JetStream or Redis Streams) between the edge gateways and the backend, so that transient backend slowness does not propagate back into the gateway as a retry storm. We deliberately avoid Kafka at this scale because the operational weight is not justified before roughly 100 M samples/day.
+### 4.1 Layer model
 
-The second axis — data volume — is where TimescaleDB earns its place in the stack. Without compression a raw reading takes ~80 B on disk; with compression (applied automatically to chunks older than 7 days) that drops to ~7–10 B per row after dictionary encoding and RLE. A 100-customer TimescaleDB node therefore holds roughly 200 GB of raw data for the 90-day retention window plus ~150 GB of 15-min/1-h/1-d aggregates with their retention horizons; a 2 TB storage instance is sufficient. The 1 000-customer ceiling is at roughly 20 TB, which is where we plan to migrate to a multi-node Timescale cluster. Database optimisation in the single-node regime relies on (i) the native Timescale chunk pruning (queries on `ts` predicates never scan chunks outside the window); (ii) a secondary (meter_id, ts DESC) index on the raw hypertable to accelerate per-meter queries; (iii) compressed chunks' `segmentby = meter_id` to accelerate per-meter read of compressed data; (iv) regular `VACUUM ANALYZE` ran by a Timescale-managed job.
+Five layers per `docs/LAYERS.md`:
 
-The third axis — geographic reach — maps onto the go-to-market phasing. Phase 1 is Verona-and-Veneto; we run one AWS region (eu-south-1 Milan) with a single TimescaleDB primary and one read replica. Phase 2 extends to the Lombardia–Emilia-Romagna–Piemonte arc; we add a second read replica and a CloudFront distribution for the frontend, but the data plane remains single-region (no regulatory reason to shard across EU regions). Phase 3 extends into DACH (primarily Austria and Bavaria, via Italian industrial-district relationships that cross the Alpine border); we clone the production cluster into eu-central-1 (Frankfurt) and enable per-tenant region pinning so that Italian customers remain on eu-south-1 while German/Austrian customers run on eu-central-1. Data residency is not negotiable for Italian PA-facing customers, which is why the Terraform skeleton also prepares an Aruba Cloud alternative — Aruba's data-centres in Arezzo and Bergamo satisfy the AGID Qualificazione Cloud per la PA requirements that are relevant when GreenMetrics is used by public entities (municipal utilities, hospital groups, university energy managers).
+1. **Infrastructure** — Terraform, S3+DynamoDB state backend, KMS, AWS Secrets Manager (Topology A) / Vault (Topology B), per-region partitioning.
+2. **Substrate** — Kubernetes (EKS / K3s / on-prem K3s depending on topology), ArgoCD, Kyverno, Falco, External Secrets Operator, cert-manager, Cosign keyless signing, SLSA L2 → L3 attestation.
+3. **Backend** — Go 1.26 + Fiber + pgx + TimescaleDB + Asynq + Redis. Layer separation: `internal/api/`, `internal/handlers/`, `internal/domain/<aggregate>/` (DDD per Rule 32), `internal/services/` (orchestration), `internal/repository/`, `internal/security/`, `internal/observability/`, `internal/resilience/`, `internal/jobs/`, `internal/packs/` (Pack-loader). Plus per-Pack code at `packs/<kind>/<id>/`.
+4. **Frontend** — SvelteKit 2 + Tailwind. White-label-readiness via `config/branding.yaml`. PDF rendering server-side with deterministic PDF/A-2b output.
+5. **Operators** — Engagement-lead, on-call (T2/T3), EGE counter-signers, auditors. Each role has a documented runbook surface and a per-role RBAC mapping.
 
-Seasonal peak handling. The manufacturing sector in Verona exhibits two predictable peak windows: (a) late February through March, when FY reporting and the Piano 5.0 filing season overlap; (b) October through early December, when CSRD dossier preparation and the 102/2014 audit submissions pile up. We scale the stateless layer horizontally in those windows via an HPA rule in the Kubernetes manifests; we pre-provision 20 per cent headroom on the TimescaleDB side; we queue batch report generation to smooth the burst. No schema changes are applied in these windows, as noted in the roadmap section.
+### 4.2 High-level data flow
 
-Read replicas vs. dedicated reporting. The analyst / auditor read path (long-running export of raw readings for an audit cycle) can be crushing on the primary if run there; we route it to a dedicated replica via a per-tenant connection string carried in the session. This is explicit in the Timescale Cloud roadmap for our Enterprise deployments; in self-hosted deployments the Terraform module provisions one read replica by default.
+A meter — electrical, gas, thermal, water, PV inverter, EV charger — is read by the GreenMetrics edge gateway (Phase G Sprint S14 deliverable) which speaks Modbus RTU / TCP, M-Bus, SunSpec, OCPP, IEC 61850, OPC UA, MQTT Sparkplug B, BACnet, Pulse, IEC 62056-21 (per Phase G Pack catalogue). The edge gateway carries a 24-hour disk-backed buffer (Rule 111), NTP-synced clock with optional GPS time stratum-1 (Rule 112), per-meter HMAC signing at ingestion (Rule 173), and mTLS to the backend.
 
-Geographic expansion. Beyond DACH, the obvious next markets are Iberia (Spain + Portugal) where the Directive 2012/27/EU transpositions mirror 102/2014 closely, and Romania where the EU funds for energy efficiency are generating comparable demand. We have no plans to expand outside the EU in the 24-month horizon; non-EU data-residency issues and the GHG-accounting factor set fragmentation (Italian mix ~0.245 vs. German 0.380 vs. French 0.055) are a distraction from the core ICP.
+The backend's `/api/v1/readings/ingest` endpoint receives signed, pre-bundled batches, verifies the HMAC, performs a `pgx` bulk COPY into the `readings` hypertable. TimescaleDB's chunk policy is a 1-day chunk interval; compression policy compresses chunks older than 7 days at 10–20× size reduction. Continuous aggregates roll up to 15-min, 1-hour, 1-day buckets. Retention drops raw rows after 90 days, 15-min after 1 year, 1-hour after 3 years, 1-day after 10 years.
 
-Data-residency local-regulation commentary. Italy does not impose a blanket data-localisation requirement, but several sectoral rules matter: AgID Qualificazione Cloud per la PA restricts cloud providers for public-administration customers to a qualified list; ARERA's directives on smart-meter data sharing require that distributor-supplied consumption data only cross an EU boundary when the data controller has issued explicit consent; the Garante Privacy's ruling on Google Analytics (2022) set a precedent for cross-Atlantic transfer restrictions that we interpret conservatively. Our policy: customer data never leaves the EU by default. An Enterprise customer may opt to replicate reporting outputs (not raw readings) to a non-EU region for global BI consolidation, and that opt-in is captured in the Order Form with an explicit Art. 46 GDPR mechanism (SCCs 2021 or an approved Code of Conduct). The platform enforces this through a per-tenant `data_region_allowed` allowlist checked at the replication layer.
+### 4.3 Carbon and reporting
 
-Capacity-planning model. We maintain a simple capacity forecasting spreadsheet that maps customer count and meter density to (a) Timescale ingestion rate, (b) aggregate-view storage, (c) backend CPU, (d) frontend request rate, (e) DSO-integration API calls. The model is updated monthly; the triggers for infrastructure up-sizing are declared as "hard" (e.g., 80 per cent pool saturation for 3 consecutive days) and "soft" (e.g., approaching a soft ceiling on aggregate-view refresh latency). Infrastructure budget runs at roughly 11–14 per cent of ARR in the early phase, dropping to 6–8 per cent at scale as the Timescale compression ratios work through the retention schedule.
+The carbon calculator queries against the appropriate aggregate view and joins versioned `emission_factors` at the temporal midpoint of the query window per Rule 90. Report Packs (`packs/report/<id>/`) implement `Builder.Build(ctx, period, factors, readings)` as pure functions per Rule 91; Core's reporting orchestrator dispatches to the registered Builder by ReportType. Builder output is byte-for-byte deterministic per Rule 89 + Rule 141, signed at finalisation per Rule 144, carries a provenance bundle per Rule 95, and is queryable for lineage per Rule 99.
+
+### 4.4 API
+
+The API surface is versioned at `/api/v1` and documented in `api/openapi/v1.yaml` (the source of truth per Rule 14 and ADR-0013). Authentication is JWT over HTTPS: HS256 with `kid` claim per Rule 170, KID rotation per ADR-0016. Identity Packs (`packs/identity/<id>/`) handle the actual proof-of-identity for local-DB / SAML / OIDC dialects. RBAC via `RequirePermission(...)` middleware per Rule 39. Errors are RFC 7807 Problem Details per Rule 4. Idempotency-Key required on POST per Rule 35 with replay storage in `idempotency_keys` Timescale hypertable (24h retention).
+
+### 4.5 Security architecture
+
+Defence in depth at three layers per Rule 39: repository-level `WHERE tenant_id = $1`, Postgres RLS policies, JWT-claim-driven middleware with `InTxAsTenant`. Field-level encryption on `readings.raw_payload` with per-tenant DEK + KMS-wrapped MEK per Rule 172 (Phase F Sprint S10 deliverable). Per-meter HMAC reading provenance per Rule 173 (Phase F Sprint S11). Chained-HMAC audit log with hourly checkpoint per Rule 169 (Phase F Sprint S11). Manifest-lock signed and verified at admission per Rule 73 (Phase F Sprint S11).
+
+### 4.6 Observability
+
+OTel SDK + OTLP gRPC exporter, sample ratio 0.1 production / 1.0 dev (Rule 18), span coverage at HTTP / pgx / outbound HTTP / ingestor poll. Zap structured JSON logs with mandatory fields per Rule 7. Prometheus exposition at `/api/internal/metrics` with cardinality budgets per Rule 40. Grafana dashboards: energy-overview, carbon-dashboard, engagement-portfolio (Phase E Sprint S8). Health envelope `{status, service, version, uptime_seconds, time, dependencies}` per Rule 6, with per-Pack health surfaced under `dependencies` per Rule 74.
+
+### 4.7 Deployment topologies (per Charter §10)
+
+- **Topology A — Public-cloud single-tenant.** AWS eu-south-1 Milan + AWS Secrets Manager + IRSA. Default. Italian residency satisfied.
+- **Topology B — Italian-sovereign-cloud single-tenant.** Aruba Cloud / Seeweb / TIM Enterprise + Vault + K3s. AGID Qualificazione Cloud per la PA satisfied (Phase J).
+- **Topology C — On-prem single-tenant.** Client's bare-metal K3s + client's IdP via Identity Pack + client-owned S3-compatible backup.
+- **Topology D — Hybrid.** OT-segment ingest backend + IT-segment frontend/reporting + site-to-site VPN + strict NetworkPolicy segmentation.
+
+The chosen topology is locked in the Discovery ADR; switching topologies after Phase 1 is a re-scoping event.
+
+### 4.8 Pack catalogue (target by end of Phase H)
+
+- **Region Packs:** it (flagship), de, fr, es, gb, at.
+- **Protocol Packs:** modbus_tcp, modbus_rtu, mbus, sunspec, pulse, ocpp_1_6, ocpp_2_0_1, iec_61850, opc_ua, mqtt_sparkplug_b, bacnet, iec_62056_21.
+- **Factor Packs:** ispra, gse, terna, aib, uk_defra, epa_egrid.
+- **Report Packs:** esrs_e1, piano_5_0, conto_termico, tee, audit_dlgs102, monthly_consumption, co2_footprint, uk_secr, ghg_protocol, iso_14064_1, tcfd, ifrs_s_1_s_2.
+- **Identity Packs:** local_db (default), saml, oidc.
 
 ---
 
-## 7. Security & Compliance
+## 5. Engagement Lifecycle (replaces v1's "Development Roadmap")
 
-The security posture rests on four pillars: identity, transport, storage, and audit. Identity is JWT-based with short-lived access tokens and rotating refresh tokens, with the JWT secret held in a KMS-backed secret store in production deployments. Role-based access control is enforced at the handler boundary for Phase 1 and will be centralised in an OPA policy bundle in Phase 2. Tenant isolation is doubled up: repository-level filtering plus optional PostgreSQL row-level security.
+The product roadmap in v1 ("Phase 1 Core Metering, Phase 2 CSRD+Piano 5.0, Phase 3 Scope 3, Phase 4 AI Forecasting") is replaced by the *template roadmap* in `docs/PLAN.md` (Phases E–J). Each *engagement* runs through its own six-phase lifecycle (Phase 0–5) per Charter §8 and Doctrine Rules 149–168.
 
-GDPR posture is stricter than baseline because ARERA deliberation 646/2015 and the subsequent Measure 147/2023 have designated near-real-time consumption data as personal data even when the POD owner is a legal entity, whenever the data can be re-identified to a natural person (for instance an entrepreneur's own electricity meter). We treat meter readings as potentially-personal by default and apply (a) field-level encryption on `raw_payload` via AES-256-GCM with per-tenant data keys wrapped by a KMS master; (b) minimisation — the backend never ingests or stores any metadata not strictly required for the regulatory use case; (c) a data-subject-request endpoint that can, within 30 days, produce a full JSON export and/or erase a natural-person identifier. The DPIA template is in `docs/DATA_GOVERNANCE.md` (populated with the GreenMetrics-specific answers for each DPIA question). Cross-border transfer is restricted to EU-only by default; transfers to non-EU cloud regions are blocked by Terraform guardrails.
+### 5.1 Phase 0 — Discovery (2 weeks)
 
-Italian-specific regulations. AgID Cloud classification (circolare n.1/2021, subsequently aggiornata) classifies cloud services for PA consumption across strategic, critical and ordinary tiers; GreenMetrics deployments serving municipal utilities or public hospitals run on the Aruba Cloud / Seeweb / Leonardo / TIM Enterprise profiles that hold the Qualificazione Cloud per la PA. The NIS2 national transposition (D.Lgs. 138/2024 effective 17 October 2024) widens the perimeter of "essential and important entities"; GreenMetrics, as a direct supplier to energy-intensive manufacturers, inherits part of that perimeter by virtue of supply-chain obligations under Annex III. We adopt the baseline incident-response timeline (24-hour early warning, 72-hour initial notification, 30-day final report) and run an annual tabletop exercise with ACN coordination as the target authority. AEEGSI / ARERA directives on smart-meter data sharing are operationalised in the `SmartMeterClient` design (mTLS, authenticated portal access, purpose-binding on the retrieved data). D.Lgs. 102/2014 audit integrity is protected by making the reports table append-only (no updates allowed after `status = submitted`), by storing a content-hash in the `audit_log` row at submission, and by co-signing the dossier with the EGE's external certificate before submission.
+Output: signed Scope-of-Work; Pack matrix listing required Region/Protocol/Factor/Report/Identity Packs; integration map (which client systems connect); deployment topology choice; Discovery ADR. No Phase 1 work begins without these artefacts (Rule 149).
 
-Audit-log immutability. Every state-changing action writes a row into the `audit_log` table. The migration defines it as bigserial-keyed, append-only, and the application layer never issues DELETEs against it. In the Enterprise deployment profile the audit_log rows are replicated in near-real-time to a WORM-enabled object store (S3 Object Lock in compliance mode) for legal-hold resilience.
+Discovery is engineer-led. Discovery deliverables are billable on a fixed-fee basis (typical €15k–€30k for a Standard engagement). If Discovery surfaces a deal-killer (the client doesn't have a clean OT/IT network, the client's regulatory needs are out of catalogue, the client's procurement timeline doesn't fit the engagement model), the Discovery is the deliverable and the engagement closes at Phase 0.
 
-Encryption and key management. At rest: AES-256-GCM on `raw_payload` and on the `users.password_hash` (bcrypt+pepper), disk-level encryption via KMS on the whole PG volume. In transit: TLS 1.3 everywhere; HSTS with 1-year max-age; `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` on the customer-facing domain. Certificate rotation: ACME via Let's Encrypt on the edge, a private CA (AWS ACM Private CA) inside the VPC for mTLS between services.
+### 5.2 Phase 1 — Fork & Bootstrap (1 week)
 
-Incident response. The incident runbook in `docs/RUNBOOK_INCIDENT.md` (to be added in Phase 2) defines severity tiers S1–S4, the on-call rotation, the communication tree (ACN, Garante, customer CISOs), and the post-mortem template. Security testing in CI covers the baseline (Semgrep, Trivy, gitleaks, govulncheck) plus quarterly penetration-test engagements.
+Engagement repository created at `github.com/<engagement-org>/<engagement-id>-greenmetrics` per Rule 150. `template-version.txt` records the upstream version. `engagements/<client>/` overlay populated with engagement-specific defaults. Bootstrap successful in client target topology. First staging deploy. `task verify` green on the engagement fork.
 
-Secure software supply chain. Every production Docker image is signed with Cosign via keyless OIDC-based signing; the ArgoCD admission policy refuses to deploy unsigned images. The SBOM is generated by Syft during CI, uploaded as a release artefact, and retained for the lifetime of the deployment. Dependency vulnerabilities with CVSS ≥ 7.0 are prioritised inside a 14-day SLA; CVSS 9.0+ within 48 hours. The third-party library allowlist is maintained in `docs/SECURITY/DEPENDENCIES.md` and reviewed quarterly.
+### 5.3 Phase 2 — Pack Assembly (3–6 weeks)
 
-Employee security hygiene. All employees use hardware security keys (YubiKey 5) for production access; laptops are managed with FileVault + mobile-device-management enrolment; SSO through an Italian IdP (CyberArk Identity or similar) with SAML into every third-party SaaS; quarterly phishing simulations via KnowBe4; mandatory annual security training with 100 per cent completion tracked.
+Required Region / Protocol / Factor / Report Packs assembled from the catalogue. Identity Pack wired against the client's IdP if applicable. Client-specific data fixtures loaded (synthetic by default per Rule 165). All required Pack contracts satisfied; conformance + property + security tests green on engagement fixtures. Phase 2 is bounded — adding more than two Packs mid-Phase-2 is a re-Discovery event per Rule 151.
+
+### 5.4 Phase 3 — Customisation Sprint (2–4 weeks)
+
+Client-specific UI overlays, custom dashboards, custom report layouts, custom alerts, integration with client SCADA / ERP / SIEM. Branding via `config/branding.yaml`. Customisation scope is the SoW + Pack matrix — beyond-scope requests are change-orders with separate pricing per Rule 152. Phase 3 ends when the client UAT acceptance scenarios are green.
+
+### 5.5 Phase 4 — Hardening & Soak (2 weeks)
+
+Production deploy. Chaos drill (per `docs/CHAOS-PLAN.md`). Failover drill. Capacity test at 1×/3×/5× expected load. Runbook walkthrough with the operator team. Phase 4 is bounded per Rule 153 — a failed drill defers Phase 5 until the drill passes.
+
+### 5.6 Phase 5 — Handover (1 week)
+
+Operator-team training. Runbook handover. On-call rotation arrangement. Postmortem template embedded. First ADR by the operator team filed. Phase 5 ends when the operator team self-reports readiness AND owns the first 7-day on-call shift (T1) or the co-managed lead picks up (T2/T3) per Rule 154.
+
+### 5.7 Total median calendar
+
+11 weeks from SoW to operator-owned production for a Standard engagement. Long-tail engagements with multi-site rollouts run 14–18 weeks. A Phase-overrun beyond 16 weeks is a Sev-2 commercial event triggering an executive-sponsor call.
+
+### 5.8 Engagement closure (Charter §8.3)
+
+Three closure conditions: (1) annual maintenance not renewed and the client has either taken full ownership or migrated to another vendor; (2) client requests termination — Macena delivers the exit pack via `task engagement-exit-pack`; (3) deployment migrates to upstream-of-template — engagement-specific code generalised back as a Pack contribution.
+
+### 5.9 Engagement portfolio expansion arc
+
+- **Q4 2026:** synthetic engagement #0 (internal) ships through Phase 5 to validate the lifecycle. End-of-Phase-E deliverable.
+- **Q1 2027:** real engagements #1 and #2 begin. Sized at Standard engagements. Italian flagship Pack matrix.
+- **Q2–Q4 2027:** real engagements #3, #4, #5 ship. Mix of Standard and Light. By end of Phase J Sprint S22, five engagements have run end-to-end through Phase 5.
+- **2028:** scale to 15–25 engagements/year based on the engagement-team hire plan in §9. Region-Pack expansion to DE / ES drives international engagement opportunities.
 
 ---
 
-## 8. Infrastructure & DevOps
+## 6. Scaling Strategy (engagement portfolio)
 
-Cloud-provider selection. The default target is **AWS eu-south-1 (Milan)** because it satisfies Italian data-residency commitments, has the lowest-latency connection to the Verona industrial belt, and because AWS's managed services (RDS PostgreSQL with the TimescaleDB extension, CloudFront, Route 53, KMS, Secrets Manager, CloudWatch, Systems Manager) form a known-quantity operational baseline. An **Aruba Cloud** alternative is wired in the Terraform skeleton (commented) for PA-facing deployments that require the Italian qualifier. A **Timescale Cloud on eu-central-1** alternative is also available for customers who want a fully-managed Timescale control plane.
+Scaling under the engagement model is not the SaaS scaling axes (request rate, tenant count, meter density at the central node). It is engagement-portfolio scale: how many concurrent engagements can the Macena team support without quality regression, and how does the Pack catalogue absorb each new engagement so that engagement #N is faster than engagement #N-1.
 
-IaC approach. All infrastructure is declared in `terraform/` with `versions.tf` pinning provider versions, `variables.tf` carrying the knobs, `main.tf` the resources, and `outputs.tf` the surface. State is stored in an S3 bucket with DynamoDB locking (backend block in `versions.tf`, commented for template safety). Every environment (development / staging / production) is a workspace; environment-scoped variables are held in a per-workspace `.tfvars` file stored in a separate encrypted bucket.
+### 6.1 Engagement-portfolio capacity
 
-Monitoring and alerting. Prometheus scrapes the backend's `/api/internal/metrics`; alerts are defined in an Alertmanager rule set covering: error rate > 1 per cent for 5 minutes (P1), ingestion lag > 5 minutes for 10 minutes (P1), Timescale connection pool saturation > 80 per cent (P2), OTLP exporter backlog > 10 s (P3), scheduled compression job failed (P2), continuous aggregate refresh lag > 2× interval (P2). Dashboards are in Grafana, provisioned from JSON.
+A single engagement-lead supports 2–3 concurrent active engagements (one in Phase 2 Pack Assembly + one in Phase 3 Customisation + one in Phase 4 Hardening). With the founder-only team in 2026–early 2027, capacity is ~3 active engagements at any given time. Phase H engagement-team hire (a second engagement lead + an engagement-advisor) raises capacity to 6–8 active engagements. By end of Y3, with five engagement leads the capacity is ~15 active engagements.
 
-Disaster recovery. RPO 15 minutes (TimescaleDB continuous backup to S3 + WAL shipping); RTO 2 hours (automated restore runbook with pre-warmed replica). DR drills are scheduled quarterly and the last drill results are logged in the ops wiki. Backups are encrypted with a separate KMS key to avoid a single-key-compromise disaster scenario.
+### 6.2 Pack-catalogue absorption
 
-Kubernetes manifests. The Helm chart (`chart/greenmetrics/` in the repository, introduced in Phase 2) ships Deployments for backend and frontend, StatefulSets for TimescaleDB and Grafana, an Ingress with cert-manager annotation for TLS, ConfigMaps for environment overlays, Secrets for credentials, HorizontalPodAutoscalers for the stateless tier, and PodDisruptionBudgets for high-availability guarantees. Resource requests are tuned per-workload: backend 500m/1 GiB request, 2000m/4 GiB limit; frontend 200m/512 MiB request, 1000m/1 GiB limit; TimescaleDB 2000m/8 GiB request, 8000m/32 GiB limit. Probes: backend liveness on `/api/live`, readiness on `/api/ready`, startup on `/api/health` with a 60-second grace.
+The whole point of the Pack model is that engagement #N's Pack work absorbs into engagement #N+1's reuse. Concretely:
 
-Deployment topology. Production runs three availability zones in eu-south-1 with the backend and frontend as Deployments across all three AZs (at least 2 replicas each), TimescaleDB as a primary plus two streaming replicas split across AZs, Grafana as a single replica with its data volume replicated via a daily snapshot plus on-demand snapshots before schema changes. An Application Load Balancer fronts the stateless tiers with sticky sessions disabled; an internal NLB fronts the database tier for read-write splitting via a dedicated proxy (pgbouncer at transaction-pool mode).
+- Engagement #1 builds the Italian-flagship Pack catalogue (Phase E Sprint S6–S7 already started).
+- Engagement #2 reuses 95% of Pack code; spends ~20% of its time on engagement-specific code.
+- Engagement #3 reuses 95%+ on a Standard engagement; spends time on edge cases.
+- Engagement #4 (German) extends the Region Pack catalogue with `packs/region/de/`; subsequent German engagements reuse.
 
-CI/CD integration. The CI pipeline produces a Docker image per commit tagged with the short SHA and a branch-name tag; merges to `main` additionally tag `latest`. The CD pipeline promotes the SHA-tagged image through environments (staging → production) via ArgoCD tracking the manifests repository. Config is environment-scoped via kustomize overlays in `ops/k8s/overlays/{staging,production}/`. Secret rotation is automated: every 90 days, a Vault job generates new JWT signing keys, ingests them into the backend's `JWT_SIGNING_KEYS` multi-key array, and retires the old key after a 24-hour overlap.
+The Pack-contribution rate (Rule 168 portfolio feedback) measures how well the absorption is happening: target ≥ 50% of engagements contribute at least one generalised Pack back upstream.
 
-Cost observability. We tag every cloud resource with `Project=greenmetrics`, `Environment=<env>`, `CostCenter=sustainability`, `Tenant=<tenant-id-if-applicable>`. Daily a cost-report job aggregates CUR (Cost & Usage Report) into a Grafana dashboard grouped by tag dimension, and the SRE reviews anomalies > 10 per cent day-over-day. Over the first year we have observed the dominant cost lines as EC2 (45 per cent, backend + Grafana + TimescaleDB nodes), RDS (30 per cent on the managed Timescale path, lower on self-managed), S3 (12 per cent with object-lock for audit-log WORM), CloudFront (5 per cent), and miscellaneous (8 per cent including Secrets Manager, KMS, CloudWatch). Reserved-instance commitments are staged in year 2 once demand is predictable.
+### 6.3 Per-deployment scale (engagement size)
+
+An individual deployment's scale axes are still the v1 axes — meter ingest rate, query latency, storage volume, dashboard concurrency — but they are now per-deployment, not per-tenant. A deployment running 100 meters with 15-minute resolution is the entry-level Topology A; a deployment running 5 000 meters with 1-minute resolution is a Topology A or D with horizontal-scale-out backend pool. The capacity model in `docs/CAPACITY.md` carries the per-deployment sizing.
+
+### 6.4 Geographic expansion (engagement-driven)
+
+Geographic expansion in v2 is engagement-driven, not roadmap-driven. The first engagement in DACH (likely Austria via Italian industrial-district relationships across the Alpine border) triggers `packs/region/at/` and `packs/region/de/` extraction. The first engagement in Iberia triggers `packs/region/es/` and `packs/region/pt/`. The first engagement in the UK triggers `packs/region/gb/`. The Pack catalogue absorbs each new region; subsequent engagements in that region reuse the work.
+
+The 24-month horizon does not target outside-EU engagements — non-EU data residency, factor-set fragmentation (Italian mix ~0.245 vs. German 0.380 vs. French 0.055), and regulatory-pack divergence are distractions from the core ICP.
+
+---
+
+## 7. Security & Compliance (engagement-aware)
+
+Security posture rests on the four pillars of v1 (identity, transport, storage, audit) plus three engagement-aware pillars (per-deployment isolation, per-engagement pen-test scope, per-engagement compliance evidence). The doctrine governs (Rules 39, 169–188); this section narrates.
+
+### 7.1 Per-deployment isolation
+
+Every engagement runs in a dedicated deployment by default (single-tenant). Multi-tenant deployments occur only when a partner ESCO / system-integrator hosts multiple SMEs — and that's the partner's risk model, not Macena's. Defence-in-depth tenant isolation (RLS + RBAC + repository-level WHERE) remains in place even in single-tenant deployments because it eliminates an entire class of bug from the attack surface.
+
+### 7.2 Per-engagement pen-test scope
+
+Annual pen-test (Rule 60, Phase J Sprint S21–S22) covers the *template*. Engagement-specific code (under `engagements/<client>/`) is pen-tested either by the engagement client's own security team or by an extended scope of the annual pen-test, billable separately per the engagement contract. Findings are tracked in `docs/PENTEST-CADENCE.md` (template) and `engagements/<client>/PENTEST-LOG.md` (engagement-specific).
+
+### 7.3 Per-engagement compliance evidence
+
+Each engagement deployment can produce its own audit-evidence pack via `task audit-evidence-pack` per Rule 108 (Phase H Sprint S15 deliverable). The pack contains: every audit-log row in the period, every report with provenance and signature, every Pack manifest with lock hash, the OpenAPI spec, the Cosign signatures, the SBOM, the conformance-suite green status, the running-system manifest. The pack is itself signed.
+
+### 7.4 GDPR posture
+
+Stricter than baseline because ARERA deliberation 646/2015 and Measure 147/2023 designate near-real-time consumption data as personal data even when the POD owner is a legal entity, whenever the data can be re-identified to a natural person. We treat meter readings as potentially-personal by default and apply: (a) field-level encryption on `readings.raw_payload` via AES-256-GCM with per-tenant DEK + KMS-wrapped MEK (Rule 172); (b) data minimisation; (c) DSAR endpoint (Phase F Sprint S10); (d) crypto-shredding for Art. 17 erasure (Rule 184). Cross-EU transfer restricted to opt-in only per Rule 8.
+
+### 7.5 Italian-specific regulations (preserved from v1)
+
+- AgID Cloud classification (circolare n.1/2021): Topology B deployments serving PA / municipal utilities / public hospitals run on Aruba / Seeweb / TIM Enterprise.
+- NIS2 D.Lgs. 138/2024: GreenMetrics inherits soggetto-importante perimeter via supply-chain obligations under Annex III. Annual tabletop exercise per Rule 167.
+- AEEGSI / ARERA directives on smart-meter data sharing operationalised in the Italian Region Pack's E-Distribuzione SMD / Terna / SPD client integrations (Rule 125).
+- D.Lgs. 102/2014 audit integrity protected by audit-log immutability (Rule 62) + report-signing at finalisation (Rule 144) + EGE counter-signature workflow (Rule 137).
+
+### 7.6 Audit-log immutability and chain integrity
+
+Beyond the role-revoke append-only invariant (`00099_audit_lock.sql`), Phase F Sprint S11 wires the chained-HMAC audit log per Rule 169 with hourly published checkpoints to a WORM-mirror (S3 Object Lock compliance mode for Topology A; equivalent for B/C/D). Tampering with any row breaks the chain at that row and surfaces in the conformance-suite verification.
+
+### 7.7 Encryption and key management
+
+- At rest: AES-256-GCM on `raw_payload`; bcrypt+pepper on `users.password_hash`; KMS-wrapped at the volume level.
+- In transit: TLS 1.3 only on customer-facing edges (Rule 174); HSTS preload; mTLS internal where reasonable.
+- Cert rotation: cert-manager + Let's Encrypt (public); cert-manager + in-cluster CA (internal).
+
+### 7.8 Incident response
+
+NIS2 timelines: 24h early warning, 72h initial notification, 30d final report. Sev-1 within 1 hour, Sev-2 within 4h, Sev-3 within 24h to runbook completion. Annual tabletop with simulated ACN coordination (Rule 167). Engagement-specific incidents follow the engagement-fork's `engagements/<client>/INCIDENT-RESPONSE.md` overlay.
+
+### 7.9 Supply chain
+
+Cosign keyless signing (ADR-0017) on every production image. SLSA L2 provenance (ADR-0018), L3 plan dated. SBOM via Syft. Trivy scan post-build, fail HIGH/CRITICAL. Kyverno admission policy denies unsigned. Manifest-lock signature verified at admission per Rule 73 (Phase F Sprint S11).
+
+---
+
+## 8. Infrastructure & DevOps (per topology)
+
+### 8.1 Topology A — Public-cloud single-tenant (default)
+
+AWS eu-south-1 Milan. Three AZs. Backend: 2–6 replicas behind ALB with HPA on CPU + custom `readings_ingest_rate`. Frontend: 2 replicas behind CloudFront. TimescaleDB: 1 primary + 2 streaming replicas (AZ-split). Grafana: single replica with snapshotted volume. AWS Secrets Manager + ESO. KMS per-env keys. RDS-Timescale Terraform module per `terraform/modules/rds-timescale/`. ArgoCD GitOps. Cosign verify at admission.
+
+### 8.2 Topology B — Italian-sovereign-cloud single-tenant
+
+Aruba Cloud (Arezzo or Bergamo) or Seeweb or TIM Enterprise. K3s. Vault for secrets. cert-manager + trust-manager for in-cluster PKI (no AWS Secrets Manager equivalent). ArgoCD. Cosign + Kyverno same as Topology A.
+
+### 8.3 Topology C — On-prem single-tenant
+
+K3s on client's bare-metal in client's DC. Identity Pack against client IdP (SAML / OIDC / AD) is mandatory. Backups to client-owned S3-compatible store. ArgoCD. Cosign + Kyverno enforced.
+
+### 8.4 Topology D — Hybrid
+
+OT-segment ingest deployed inside the OT zone; frontend / reporting in IT segment; site-to-site VPN with strict segmentation. NetworkPolicy bundles per-segment. The OT-segment ingest backend speaks only to OT-segment meters and to a single egress proxy at the IT-segment boundary.
+
+### 8.5 Monitoring and alerting
+
+Prometheus scrapes the backend's `/api/internal/metrics`. Alertmanager rules: error rate > 1% for 5min (P1), ingestion lag > 5min for 10min (P1), Timescale connection pool > 80% (P2), OTel exporter backlog > 10s (P3), scheduled compression failed (P2), CAGG refresh lag > 2× interval (P2). Each alert annotated with `runbook_url` per Rule 40.
+
+### 8.6 Disaster recovery
+
+RPO 1 hour (Timescale WAL streaming + nightly pg_dump). RTO 4 hours (automated restore runbook with pre-warmed replica). DR drills quarterly per Rule 107. Last drill recorded in `docs/CHAOS-LOG.md`. Backups encrypted with separate KMS key (single-key-compromise resilience).
+
+### 8.7 CI/CD
+
+Per `docs/PIPELINE-MAP.md`. Build → sign → SBOM-attest → SLSA-provenance-attest → image-scan → policy-check → deploy-canary → analyse-SLO-burn → promote → observe-post-deploy. Argo Rollouts AnalysisTemplate reads SLO burn-rate. Manual approval is one of the gates, not the only gate (REJ-24).
+
+### 8.8 Cost observability per deployment
+
+Every cloud resource tagged with `Project=greenmetrics-<engagement-id>`, `Environment=<env>`, `Tenant=<tenant-id>`. Daily cost-report job aggregates CUR into a Grafana dashboard. SRE reviews anomalies > 10% day-over-day. Per-engagement cost-margin reporting flows into the engagement P&L.
 
 ---
 
 ## 9. Team Structure & Hiring Plan
 
-The founding team is intentionally small and heavy on domain expertise. The first year's hiring plan is built around a four-role spine plus one growth hire.
+### 9.1 Year 1 (now → end of Phase J)
 
-The **Founding CTO / Lead Backend Engineer** owns the Go backend, the TimescaleDB schema, and the architectural roadmap. Profile: 8–12 years of backend experience, prior time-series or SCADA work, fluent Italian and English. Compensation band: €75–95 k base + equity.
+**Founder / CTO / Lead Engineer (existing).** Owns the Go backend, TimescaleDB schema, Pack architecture, charter, doctrine, plan. Profile: Renan Augusto Macena. Compensation: founder.
 
-The **Founding Energy / ESG Advisor** is the non-obvious but essential hire. Profile: an EGE certified per UNI CEI 11339 or a CMVP-certified auditor, 10+ years in Italian industrial energy management, active relationships with Federesco, FIRE, Assoege; ideally previous work with ESCO and commercialisti. Compensation: €60–80 k base plus 5 per cent warrants, or a structured board-advisor arrangement with revenue-linked retainer. This hire unlocks the product credibility with the buying centre and co-signs the first 50 Piano 5.0 attestazioni.
+**Founding Engagement-Lead Engineer (Phase H hire, Sprint S15).** Profile: 8–12 years backend Go / industrial-software experience, prior Italian-industrial-energy or SCADA work, fluent Italian and English. Owns the engagement lifecycle Phase 0 → Phase 5 for engagements #1–#3. Compensation: €75–95k base + equity.
 
-The **Full-stack Engineer (SvelteKit + Go)** rounds out the engineering team, owning the frontend and the API integration. Profile: 5+ years with strong TypeScript, comfortable with Go, familiar with accessible design systems. Compensation: €55–72 k base plus equity.
+**Founding Energy / EGE Advisor (Phase H hire, Sprint S15).** Profile: EGE certified per UNI CEI 11339 or CMVP-certified auditor, 10+ years in Italian industrial energy management, active relationships with Federesco / FIRE / Assoege, prior ESCO and commercialisti work. Co-signs the first 50 Piano 5.0 attestazioni and audit 102/2014 dossiers. Compensation: €60–80k base + 5% warrants, or board-advisor + revenue-linked retainer.
 
-The **Site Reliability Engineer (part-time until Month 9, then full-time)** owns Terraform, Kubernetes, observability and DR. Profile: 5+ years, deep AWS + Kubernetes, CNCF-adjacent experience, bilingual. Compensation: €65–85 k.
+**Founding Sales / Engagement-Director (Phase H hire, Sprint S16, contingent on engagement #1 closing).** Profile: 7+ years industrial B2B sales in Northern Italy, prior Confindustria network, fluent in commercialista / CFO procurement language. Owns the engagement-pipeline development + channel-partner relationships. Compensation: €65–85k base + commission on engagement margin.
 
-The **ESG Sales / Key Account Manager** is the revenue hire. Profile: 8+ years selling to Italian industrial SMEs, existing network in Confindustria Verona / Lombardy, comfortable discussing both the technical (Piano 5.0 thresholds) and the financial (LTV, credit-amortisation) side. Compensation: €55–75 k base + uncapped variable + equity, OTE around €120 k.
+### 9.2 Year 2 (post-v1.0.0, engagement #4–#10)
 
-Year 2 adds: a second engineer for Scope 3 + LCA, a customer-success manager, a second sales rep, and a technical writer (for the English-language international MODUS operandi and the ESRS E1 methodology paper).
+Add: second engagement-lead engineer, second EGE advisor (or formal partner-EGE network), one-day-a-week security advisor (formalising RISK-006 mitigation).
 
-Year 3 hiring plan extends the commercial organisation to six (two KAMs, two SDRs, one CSM, one enablement lead), the engineering organisation to eight (three backend, two frontend, one data/ML, one SRE, one security), and adds a VP-level operator as a CFO or COO depending on the investor preference at Series A. At the year-3 headcount target of ~22 FTE the per-FTE revenue productivity is approximately €335 k, which is on the high end for an Italian B2B SaaS but below the level of the larger US comparables (€500 k+); the discount reflects the Italian cost base, not operational inefficiency.
+### 9.3 Year 3 (engagement portfolio scaling)
 
-Organisation design. Engineering reports to the CTO through three squads (Platform, Reporting, Integrations). Commercial reports to the founder-CEO through a VP Sales (year 3) with KAMs, SDRs, and CSMs underneath; the ESG advisor sits cross-functionally, coaching both engineering on methodology and sales on customer conversations. G&A sits with a part-time fractional CFO until Series A, then moves to a full-time CFO. We deliberately keep product management light in the first 18 months — the founder-CEO and CTO jointly own product direction — and hire a dedicated PM in year 2 when the product surface exceeds what two people can track.
+Engineering: 4–5 engagement leads, 1 platform engineer (substrate ops), 1 security engineer (DevSecOps), 1 data/ML engineer (forecaster + drift detection ops), 1 frontend engineer.
+Engagement: 2–3 sales / engagement directors, 2 customer-success leads (T2/T3 retainer support), 1 EGE-network manager.
+Operations: founder transitions to CEO; CFO / COO at VP level for series-A / strategic-investor conversation.
 
-Remote / hybrid strategy. Engineering is remote-first with a monthly Verona in-person week for architectural offsites; commercial roles are Verona-based for relationship density; the ESG advisor travels with field visits. Health insurance (FASI/FASDAC equivalent), buoni pasto, meal-vouchered coworking allowance, and a training budget of €2 500/year/person are standard.
+### 9.4 Total Y3 headcount target
 
-Culture and operating cadence. Weekly all-hands every Monday 09:30 Europe/Rome for 30 minutes, covering pipeline, product progress, customer health. Bi-weekly engineering retrospective on the train-cut day. Quarterly strategic offsite in a Verona or Garda-lake venue. Annual operating plan built in November for the following calendar year, with quarterly re-forecasts. Compensation reviews annually in March; promotions considered at any time with a clear rubric. Equity is broadly distributed: every full-time employee above month-6 tenure is granted options vesting over 4 years with a 1-year cliff.
+15–20 FTE. The engagement-margin economics support this headcount at portfolio scale of 15–25 engagements/year.
 
----
+### 9.5 Hiring discipline
 
-## 10. Marketing & Sales
-
-The go-to-market plan rests on four pillars: events, content, partnerships, and outbound.
-
-Events first. Italy's industrial-energy circuit has a small number of anchor events that our ICP attends en masse: **Key Energy Rimini** (November) is the Italian energy-efficiency trade show and sets our annual rhythm; **mcT Cogenerazione Milano** (spring) is the combined-heat-and-power specialist show; **ZeroEmission Mediterranean Roma** (autumn) is the carbon-markets and climate-action venue; **SMAU Milano** and **SMAU Bologna** give ICT-adjacent exposure; **ANIE Confindustria** industry nights in Milano and Roma offer the CEO-level access; **SPS Italia Parma** is the automation show where the Modbus / M-Bus integrators we partner with are found. We plan one sponsored booth (Key Energy) per year, three speaking slots (mcT, ZeroEmission, ANIE), and five partner-co-hosted dinners in Verona and Milan. Budget: €120–180 k/year including travel.
-
-Content marketing. Italian industrial buyers read a handful of industry publications: **QualEnergia** (Legambiente), **Energia Media**, **Rinnovabili.it**, **FIRE Energia**, **Staffetta Quotidiana**, **Il Sole 24 Ore — Radiocor**. We commission one deep methodology piece per quarter (for example "Come calcolare la soglia 3 per cento del Piano 5.0 in un impianto con autoconsumo fotovoltaico") and a monthly column in Energia Media under the founder's byline. Content is syndicated in English on the international site for DACH expansion. LinkedIn is the primary social channel; we expect to produce 2–3 short-form posts per week from the commercial and technical leads.
-
-Partnerships. Three named partnerships drive the channel: **Federesco** (association of ESCOs) for co-marketing with its member companies; **FIRE — Federazione Italiana per l'uso Razionale dell'Energia** for methodology validation; **Assoege** (association of EGEs) for the delivery-partner network. Additional partnerships in year 2 with **Confindustria Verona** (buyer introduction) and **Camera di Commercio Verona** (Piano 5.0 awareness programmes with SMEs).
-
-Outbound. A 300-account outbound list is maintained in the sales CRM, enriched from Cerved / Infocamere firmografic data filtered by ATECO, dimensional thresholds (>20 FTE, >€5M turnover), and energy intensity proxies (SIC 2-digit match against ISPRA energy-intensive classifications). The SDR targets one qualified meeting per account per quarter; the conversion target is 20 per cent qualified → demo, 30 per cent demo → proposal, 40 per cent proposal → close. Net, 72 annual closed-won from outbound at steady state, which together with the partner channel hits the year-3 plan.
-
-Digital. Paid search is narrowly scoped to "Piano Transizione 5.0 attestazione", "CSRD ESRS E1 PMI", "audit energetico 102 2014", and a handful of long-tail phrases with clear intent. Budget €3–5 k/month. SEO investment is in long-form methodology pages published on the marketing site, internally linked from the landing page, with schema.org `TechArticle` markup.
-
-Lead-scoring and CRM discipline. We use a straightforward RFM-style scoring on inbound leads: recency of inquiry × fit (ATECO alignment + employee count + revenue) × engagement (content views, webinar attendance). Leads above a threshold are routed to direct sales; below the threshold they enter a nurture track with monthly educational emails anchored to the regulatory calendar. The CRM of record is HubSpot at the Starter tier, upgraded to Sales Hub Professional in year 2. Every closed-won deal is post-mortem'd in a 30-minute win/loss review; every closed-lost with >€30 k ARR at risk gets a structured loss-analysis with the buyer.
-
-Customer case studies and reference programme. By month 12 we expect to have published five anonymised customer case studies (with explicit written permission for three attributed ones). Case studies follow a consistent structure: customer context, business problem, solution deployed, measurable outcomes (kWh saved, EUR credit unlocked, time saved on reporting), quote from the sustainability / energy manager. Reference calls are managed through a calendar link; each reference customer is capped at four calls per quarter to avoid burden, and each accepted reference earns a 5 per cent annual subscription discount.
-
-Thought-leadership contributions. The founder-CEO and the ESG advisor target two published op-eds per year in industry-tier Italian business press (Il Sole 24 Ore Plus, Economy, Energia Media), plus speaking at the annual Key Energy conference in Rimini. An English-language thought-leadership output is introduced in year 2 via guest posts on the Grafana Labs blog (customer-success story) and the Timescale blog (database-engineering dive), leveraging technology-partner relationships for distribution.
-
-Webinar calendar. Quarterly Italian-language webinars on topical themes: "Piano 5.0 — i 10 errori più comuni nell'attestazione", "ESRS E1 — dati minimi e metodologie ammesse", "Come passare dall'audit 102/2014 alla certificazione ISO 50001", "Conto Termico 2.0 e il collegamento con il Piano 5.0". Each webinar targets 200+ registrations, of which ~30 per cent become marketing-qualified leads and ~10 per cent progress to sales conversations.
+Per Rule 9 (platform discipline) and Rule 49 (DevSecOps discipline), every team has a charter, a scope, an authority, a termination criterion. New roles file an ADR justifying the role's existence and the hire.
 
 ---
 
-## 11. Financial Projections
+## 10. Go-To-Market
 
-Three-year P&L sketch (in € thousands):
+### 10.1 Direct sales (Y1)
 
-| Line                      | Year 1 | Year 2 | Year 3 |
-|---------------------------|--------|--------|--------|
-| Subscription revenue      | 600    | 2 400  | 5 400  |
-| Services revenue          | 200    | 1 000  | 2 000  |
-| Total revenue             | 800    | 3 400  | 7 400  |
-| COGS (hosting, licenses)  | 120    | 430    | 930    |
-| Gross profit              | 680    | 2 970  | 6 470  |
-| Gross margin              | 85%    | 87%    | 87%    |
-| R&D                       | 650    | 1 050  | 1 600  |
-| Sales & Marketing         | 380    | 900    | 1 600  |
-| General & Admin           | 180    | 360    | 500    |
-| EBITDA                    | (530)  | 660    | 2 770  |
-| EBITDA margin             | neg.   | 19%    | 37%    |
+Founder-led + Engagement-Director-led conversations with industrial CFOs, Sustainability Leads, Plant Managers in Verona / Veneto / Lombardia. The wedge is the Piano 5.0 + 102/2014 + CSRD trio: a single engagement covers all three calendar events.
 
-Break-even is reached in mid-Year 2 at approximately 30 Professionale customers. The year-1 burn is financed by a €1.2 M seed round (founders + strategic angels from the Italian energy sector) with a 24-month runway at plan. The Year-2 growth funding (Series A, target €5 M at a €25–35 M pre-money) is earmarked for sales and marketing expansion into Lombardy and DACH, plus the engineering hires required for Scope 3 and the flexibility-market connector.
+### 10.2 Channel partners (Y1–Y3)
 
-Cash runway and risk. Year 1 burn sits at approximately €45 k/month average, well within the seed envelope. The risk line to watch is the services revenue: it is labour-constrained and cannot scale as fast as the subscription. If we miss services revenue by 30 per cent the EBITDA swing is ~€300 k in year 2; we absorb this by deferring the second sales hire and by outsourcing three attestazione deliveries per quarter to an Assoege partner at 60 per cent of retail.
+Three legs per §3.10:
 
-Capital-efficiency discipline. The operating plan has three non-negotiable guardrails: (i) months-of-runway is monitored weekly and triggers a cost-action review below 10 months; (ii) sales efficiency (net new ARR per sales + marketing euro spent) is measured monthly with a target of 0.5× in year 1 scaling to 1.0× by year 3; (iii) gross margin is never allowed to drop below 75 per cent, which means any services work over-running on labour gets repriced upward on the next engagement or handed to partners. These rules are explicit in the board's quarterly scorecard.
+- EGEs / ESCOs co-sell at 15–20% engagement-margin share.
+- Commercialisti refer at 5–10% first-year license commission.
+- System integrators handle physical install at set-hours rate-card.
 
-Working-capital and cashflow. The Italian B2B payment norm of 60–90 days matters materially at our scale. We offer the 2 per cent early-payment discount mentioned earlier, use factoring selectively (only on invoices above €50 k to tier-1 customers via Banca Sella or Allianz Trade), and maintain a €500 k revolving credit facility for cash-flow smoothing. The platform's unit economics (high gross margin, long contract tenure, regulatory stickiness) supports a healthy cashflow profile once past break-even, but the working-capital gap needs active management pre-break-even.
+### 10.3 Industry-body engagement
 
-Fundraising timing. The seed (€1.2 M) closes by month 3; Series A (€5 M) targets a close by month 18–20, timed to coincide with the reported year-2 year-end numbers but in practice raised against year-2 exit-quarter run-rate. The fundraise narrative has two hooks: (a) a regulation-backed demand environment with visible quarterly catalysts; (b) a dominant position in Italian Piano 5.0 attestazione with a path to DACH. Investor profile target: EU sustainability-thesis funds (Bpifrance, Italmobiliare, P101, ETF Partners, Climentum, 360 Capital), plus strategic participation from an Italian utility or industrial group.
+Federesco, FIRE, Assoege, Confindustria Verona, ANIE, Assoege. Speaking engagements at Pre-CSRD-wave-2 conferences (Q4 2026). Guest articles in Eunoé / Energia Italia / Forum PA. Quarterly white-paper drop pushed to industry-body newsletters (a regulatory-pack-update primer for the obligated cohort).
+
+### 10.4 Reference architecture publications
+
+Open-publish (after license decision in Phase J Sprint S22, per ADR-0053) the architecture, the doctrine (or the doctrine's structure), the conformance-suite contents, the runbook catalogue. Auditors and procurement reviewers like to read what they can audit; transparency is a sales asset.
+
+### 10.5 The compliance calendar
+
+§3.11 already described. The compliance clock as a quarterly outbound is the single most effective up-sell mechanism — per the v1 SaaS analysis, accounts that received the clock showed 18–22% annual up-sell vs 8–10% without; the engagement-model equivalent is engagements that move from T1 to T2 within 12 months and engagements that add Packs (e.g., a customer that started with CSRD E1 + Piano 5.0 adds audit-102 + Conto Termico in year 2).
 
 ---
 
-## 12. Operations Manual
+## 11. Financial Framing
 
-Day-to-day operations run on a 24/7 on-call rotation for the Professionale and Enterprise tiers. The rotation is staffed by the two engineers and the SRE with an external backup through a paid Italian partner (itnovum / SEDC). SLAs are differentiated per tier: Starter 99.0% uptime business hours, Professionale 99.5% with 24/7 support, Enterprise 99.9% with 1-hour P1 response. Support channels are email (support@), phone (Italian Verona-based number), and in-console chat. Runbooks are in `docs/RUNBOOKS/` covering database restore, TLS rotation, emission-factor update, GSE submission retry, ENEA audit submission, and Grafana dashboard restore.
+The v1 financial framing was SaaS-shaped (ARR, ARPA, churn, blended CAC, LTV/CAC). The engagement-model framing replaces those with engagement-portfolio metrics.
 
-Daily operational cadence. Every morning at 08:30 the on-call engineer reviews the overnight alert feed, the Timescale chunk-compression report, the OTLP exporter backlog, and the DSO-integration queue. Anything outside normal envelope is captured as a ticket in the ops backlog; anything customer-facing is pushed to the CSM. The weekly operations review on Friday 15:00 walks the top 10 customer accounts by meter count and the top 10 by incident rate, and plans proactive calls for the following week. Every month the SRE publishes an availability report against the SLA for each tier, with root-cause analysis of any SLA burn.
+### 11.1 Revenue projection
 
-Change-management procedure. Any production change requires a Change Request ticket with a defined rollback plan, a staging run before production, and a sign-off from a second engineer. Emergency changes bypass the two-engineer rule but require immediate post-hoc review at the next weekly operations review. Database migrations are always batched into a quarterly maintenance window unless security-critical.
+- **Y1 (2026 H2 + 2027 H1).** 1 synthetic engagement (internal, no revenue) + first 2 real engagements closing in Q1–Q2 2027. Revenue = €280k (engagement #1 license + customisation) + €240k (engagement #2 license + customisation) + €40k (regulatory-deliverable services on engagement #1 + #2) = **€560k**.
+- **Y2 (2027 H2 + 2028 H1).** Engagements #3–#7. Revenue = 5 × €260k average + 2× €18k T2 retainer × 12 mo + €120k regulatory-deliverable services = **€1.95M**.
+- **Y3 (2028 H2 + 2029 H1).** Engagements #8–#15. Revenue = 8 × €280k + 4× €25k T2 retainer × 12 mo + 1× €40k T3 retainer × 12 mo + €280k regulatory-deliverable services + €380k annual maintenance attach = **€4.4M**.
 
-Customer support triage. Tier-1 support handles the first 80 per cent of tickets (how-to, configuration, basic troubleshooting) with a 4-hour first-response SLA. Tier-2 handles the 15 per cent that require engineering involvement with a 24-hour first-response SLA. Tier-3 escalations (critical outages, data-integrity issues) are handed directly to the on-call engineer with a 1-hour first-response SLA on Professional and 30-minute on Enterprise. The ticket taxonomy is synced monthly with product management so that recurring support friction becomes a product-backlog input.
+### 11.2 Margin projection
 
-## 13. Risk Management
+Engagement-margin (gross) target ≥ 65% T1, ≥ 55% T2, ≥ 45% T3. Y1 gross margin ~62% (mostly T1 with founder-time-heavy customisation). Y2 gross margin ~58% (mix of T1/T2). Y3 gross margin ~57% (mix of T1/T2/T3 with T3 lower-margin but more recurring).
 
-Top risks, each with mitigation attached.
+### 11.3 Net engagement value (5-year)
 
-1. **Regulatory change (CSRD delay, Piano 5.0 decree amendment).** Mitigation: 12 per cent capacity buffer for regulatory agility; active tracking by the ESG advisor; close contact with MIMIT and MASE technical desks.
-2. **Meter-vendor API drift (Carlo Gavazzi firmware change, etc.).** Mitigation: integration test matrix with the top 10 meter models; nightly regression against a test harness.
-3. **TimescaleDB major-version upgrade friction.** Mitigation: staged upgrade windows, tested in staging first, cut-over inside the November engineering-freeze window.
-4. **Key person risk on the ESG advisor.** Mitigation: knowledge base capturing attestazione methodology, written operational procedures, second advisor identified by month 9.
-5. **Sales cycle lengthening due to CSRD wave deferment.** Mitigation: pivot the narrative to 102/2014 readiness, which is independently obligated.
-6. **Cyber incident.** Mitigation: ISO 27001-aligned ISMS, annual penetration test, cyber-insurance policy with €2 M limit.
-7. **Utility-bundled free alternative.** An Italian utility may launch a zero-cost energy-monitoring offer bundled with a supply contract. Mitigation: emphasise vendor-neutrality, open-source surface, and regulatory-dossier depth as differentiators; maintain a price-resilient Enterprise tier that a utility cannot replicate at scale; build ESG-advisory reputation that a utility captive cannot match.
-8. **ISPRA factor revision mid-cycle.** If ISPRA publishes an unexpected mid-year revision with material impact on historical reports, customers may need to restate. Mitigation: versioned emission-factor table, re-compute-from-raw capability, customer-communication template for restatement events, and an explicit methodology appendix in every report stating which factor version was used.
-9. **Talent attrition on the ESG side.** Senior EGEs are scarce in Italy; a departure can stall product methodology. Mitigation: document methodology in code and prose, cross-train the CS team on attestazione structure, maintain a second ESG advisor-on-retainer arrangement.
-10. **Timescale Cloud pricing shift.** Managed Timescale's economics could deteriorate with a vendor price increase. Mitigation: architecture is vendor-portable (plain Postgres + TimescaleDB extension can run on any AWS RDS / Aurora / self-managed instance); migration runbook tested annually.
+A typical Standard T1 engagement at €160k license + €130k customisation + €120k 5-year-maintenance + €30k 5-year-regulatory-deliverable services = **€440k** 5-year revenue, with a 5-year delivery cost of ~€140k = €300k net. Compared to v1's "LTV/CAC > 20" claim — those metrics don't apply, but the engagement net-value is similar in magnitude per engagement.
 
-Risk reporting. The top-10 risk register is reviewed monthly by the management team and quarterly by the board. Each risk carries an owner, a probability × impact score, and a mitigation-action list with status. Risks that exceed a defined threshold (probability > 30% × impact > €100 k) escalate to a mandatory board discussion with proposed mitigations documented in meeting minutes.
+### 11.4 Investor framing
 
-## 14. Quality Assurance
+Engagement-portfolio companies of this profile (specialised industrial software with regulatory wedge) are typically valued at 4–8× revenue or 8–12× engagement-margin EBITDA, depending on the growth-rate. Y3 target supports a €17M–€53M valuation envelope at exit.
 
-Testing strategy follows the portfolio baseline: unit 70%, integration 20%, end-to-end 10%. Go `testing` + `httptest` for the backend, Vitest + Playwright for the frontend, docker-compose spun up in CI for integration paths. Code review is mandatory; no direct push to `main`. The CI pipeline runs `golangci-lint` with the shared `.golangci.yml` configuration, `svelte-check`, `eslint`, `semgrep`, `trivy`, `gitleaks`, and `govulncheck`. Coverage targets 70 per cent lines / 60 per cent branches at MVP, tightening to 80 / 70 by v1.0. Release cadence is a tagged release every two weeks; the release notes are auto-generated from PR titles and manually reviewed by the CTO.
+The investor narrative is *not* "we're a SaaS doing €5M ARR by Y3 with 30%+ growth" (the v1 narrative). It is "we're an engagement-platform company with 15+ regulator-grade industrial deployments, a defensible Pack catalogue, and the only audit-grade modular template in the surveyed competitive field."
 
-Methodology validation. For every report type the generator ships with a reference test vector — a synthetic tenant with known inputs and a known expected output — that is executed on every CI run. The reference vector for Piano 5.0 comes from a published worked example in a joint Federesco / FIRE technical paper (appropriately referenced); the CSRD ESRS E1 vector is built from the EFRAG Technical Advice worked examples. If a code change causes the generated output to diverge from the reference beyond a tolerance band, the CI fails and the change must be justified with a methodology update note signed by the ESG advisor. This process has prevented two regression incidents in our pilot phase that would have corrupted customer dossiers.
+### 11.5 Strategic-acquisition scenarios
 
-Accessibility and internationalisation QA. We run axe-core automated checks in the Playwright E2E flows and manually walk through the keyboard-navigation checklist for every release. Italian copy is the source of truth; English and German strings are generated via a dedicated translation workflow with a professional translator on retainer (not machine-translated). Currency and number formatting follow Italian locale (1.234,56 €); dates are rendered in ISO 8601 for developer-facing contexts and DD/MM/YYYY for customer-facing ones.
+Plausible acquirers:
 
-Performance budget and regression. Each release runs a k6 smoke against staging with defined performance budgets: `/api/health` P99 < 100 ms, `/api/v1/readings/aggregated` P95 < 250 ms on a 30-day window, `/api/v1/reports` synchronous endpoints P95 < 2 s for report kick-off. If any budget is exceeded by more than 20 per cent the release is held and triaged. Long-running report generation is moved to a background job queue (implemented in Phase 2) so the synchronous endpoint always returns under budget.
+- A large Italian / European industrial-software vendor wanting Italian regulatory depth (e.g., Var Group, Engineering Ingegneria Informatica, Almaviva, Cybertec).
+- A global ESG / sustainability platform wanting OT-native ingestion + Italian flagship (e.g., Watershed, Persefoni at scale).
+- A Tier 1 OT vendor wanting a vendor-neutral wedge (e.g., one of Schneider / Siemens / ABB / Honeywell).
 
-## 15. Customer Success
+The engagement-team's bar for conversation is "the acquirer commits to maintaining the modular-template model post-acquisition." Sale to an acquirer that would convert it to a closed SaaS is rejected on principle — that defeats every doctrine rule and every existing engagement client's expectation.
 
-Onboarding is a six-week structured programme: week 1 kick-off and scoping, weeks 2–3 meter integration, week 4 Grafana dashboard build-out, week 5 first CSRD / Piano 5.0 dry run, week 6 go-live. A Customer Success Manager (added in year 2) runs quarterly business reviews with the customer's sustainability owner, walking through the emissions trend, the upcoming regulatory calendar, and any Piano 5.0 or Conto Termico opportunities the platform has surfaced. Retention is measured quarterly; the target is 92 per cent annualised net revenue retention.
+### 11.6 Strategic-independence scenarios
 
-Onboarding kit. At kick-off the customer receives a branded "benvenuto" packet including: the compliance-clock one-pager for their specific sector and size, a meter-inventory template to fill in before the integration phase, a cheat-sheet on ISPRA factors applicable to their site, and a 30-minute methodology walkthrough video keyed to their industry (manufacturing / food processing / agro-processing). The packet is deliberately low-tech but high-signal — it reassures the buyer that the vendor understands their context.
-
-Customer health scoring. We track five signals monthly per account: meter-coverage ratio (fraction of declared meters actually online), dashboard usage (weekly active users), report-generation frequency, support-ticket velocity, and NPS (measured quarterly). Accounts with any signal in the red zone are flagged for a targeted CSM intervention; accounts with three or more in the red zone trigger an executive-sponsor call. This process has been shown in mid-market SaaS to reduce involuntary churn by 30–40 per cent.
-
-Expansion playbook. The CSM owns an expansion funnel distinct from net-new sales. Typical expansion motions: (a) additional meter onboarding when a new production line or site is commissioned; (b) upgrade from Starter to Professionale when CSRD deadline approaches; (c) add-on purchase of one-off services (Piano 5.0 attestazione, Conto Termico application); (d) deeper Scope 3 engagement when the customer's auditor asks for it. Each motion has a defined trigger event and a playbook email + call template. Average expansion per active account runs at 18 per cent annualised.
-
-## 16. Partnerships & Ecosystem
-
-Primary technology partners are TimescaleDB (database), Grafana Labs (dashboards), and Anthropic / OpenAI (LLM-assisted methodology drafting in Phase 4 for the CSRD narrative text — strictly optional). Primary ecosystem partners are Federesco, FIRE, Assoege, and a short-list of three regional system integrators for the physical-layer meter install work. A formal reseller programme is introduced in year 2 with tiered economics (10 / 15 / 20 per cent discount off retail based on volume).
-
-Partner-enablement programme. Every partner is certified through a three-day training covering platform configuration, emission-factor methodology, Piano 5.0 attestazione preparation, and CSRD ESRS E1 mapping. Partners receive a co-branded proposal template, a deck for end-customer pitches, and a 10-per-cent discount lab environment for their own technical training. We maintain a partner portal with shared pipeline visibility (no customer steals), a quarterly partner newsletter, and annual Partner Summit in Verona (hosted during Vinitaly week to leverage visiting traffic). The economics are designed so that the partner's margin on a mid-sized deployment is €8–15 k of first-year margin — sufficient to make the partner motivated but not so large that it erodes our own unit economics.
-
-International partnerships. In the DACH expansion we anticipate partnering with German ESCOs (Siemens Energy Services, E.ON Energy Solutions) on white-label deals, and with Austrian regional energy agencies. The partner terms are identical to the Italian programme; the localisation work (German-language UI strings and DACH-specific emission factors from Umweltbundesamt / ZAMG) is done in-house.
-
-Community and open source. The GreenMetrics backend ships under MIT and the emission-factor seed data ships in the public-domain portion of the repository. We maintain a small public Discord server and a GitHub Discussions board for community Q&A. External contributions are welcomed — primarily for emission-factor corrections and for additional Modbus register maps — and we run a CLA-free contribution policy with DCO sign-off as the only requirement. The open-source surface is deliberately limited to the backend and the emission-factor library; the frontend, the Grafana provisioning, and the enterprise-grade features (SSO/SAML, Scope 3 Ecoinvent wiring, MSD connector) remain proprietary.
-
-## 17. Exit Strategy
-
-Logical acquirers are (a) international infrastructure / automation groups expanding their ESG / energy portfolio — Schneider Electric, Siemens Smart Infrastructure, ABB, Emerson, Honeywell; (b) Italian utilities accelerating their B2B energy-service portfolio — Enel X, A2A, Hera, Edison; (c) ESG / accounting-software consolidators — Sphera, Sweep, Watershed, Persefoni. The most strategically aligned are Schneider and Enel X, both of which have stated ESG-platform ambitions and an Italian industrial customer base. IPO is not contemplated at current scale; a Euronext Milan Growth listing is the earliest realistic venue beyond €25 M ARR.
-
-Valuation framing. Comparable transactions in the ESG / energy-management space cluster around 8–14× ARR for recurring revenue and 1–2× for services revenue. At year-3 mix (subscription €5.4 M, services €2.0 M) this implies an enterprise-value window of €47–77 M at conservative exit multiples and materially higher if Scope 3 penetration scales. The acquirer's strategic premium for an Italian specialist with Piano 5.0 and CSRD depth tends to run 20–30 per cent above the baseline multiple, given the regulatory moat and the difficulty of building the domain equivalent from scratch. A secondary offer (partial exit via Series B or growth equity) at year 3 remains a realistic alternative to full sale, preserving optionality for a larger exit at year 5–6 when the CSRD wave 3 (SME listed) and the extended 102/2014 cycle together lift the SAM ceiling.
-
-Strategic independence scenarios. If neither acquisition nor growth equity materialises at attractive terms, the base-case path is a cash-flow-positive operating company that grows at 30–40 per cent annually on retained earnings — the Italian SaaS market has multiple precedents of successful bootstrapped companies in the €10–30 M ARR range (Fatture in Cloud pre-TeamSystem, Danea, Zucchetti's smaller acquisitions) that remained independent profitably for years. The founder and investor alignment on this option is explicit in the shareholders' agreement: no forced-sale clauses, no put options that would trigger a distressed exit, and a unanimous-consent threshold on any acquisition term sheet.
+If neither acquisition nor strategic investor materialises, the base case is a cash-flow-positive operating company growing at 25–35%/year on retained earnings. Italian engagement-software companies in the €5–15M revenue range have historically been viable indefinitely as bootstrapped specialists; the engagement-margin economics support founder-and-team livelihood without external capital.
 
 ---
 
-*End of MODUS OPERANDI — GreenMetrics.*
+## 12. Operational Handbook
 
-Appendix note on documentation maintenance. This document is the source of truth for the commercial and technical playbook; it is reviewed in full every six months and amended in place when a material change occurs (regulatory update, pricing change, significant architecture evolution). Amendment history is tracked in the repository git log with commit messages prefixed `modus:`. The ESG advisor and the founder-CEO jointly sign off on each amendment, and material sections are communicated to the investor group as part of the quarterly board update. Derived artefacts — sales decks, customer briefings, partner enablement material — are kept synchronised with this document via a shared-drive canonical-link policy, so that no marketing collateral contradicts the operating plan encoded here.
+### 12.1 Daily
+
+- Stand-up across active engagements (Phase 2 / 3 / 4 / 5).
+- Per-engagement health-dashboard review (uptime, incident count, drill freshness, sync recency).
+- Continuous-verification loop (Rule 64) — `task verify` green on every PR.
+
+### 12.2 Weekly
+
+- Per-engagement client touchpoint (typically the engagement-lead with the client's energy manager).
+- Pack-catalogue housekeeping (open PRs, sync upstream into engagement forks per Rule 79).
+- Cost-anomaly review on per-deployment dashboards.
+
+### 12.3 Monthly
+
+- Engagement-portfolio health review.
+- Compliance-clock production for each active engagement.
+- Pack-version review for the active engagements.
+
+### 12.4 Quarterly
+
+- Charter office hours (every Q1).
+- Doctrine office hours (every Q2).
+- Engagement-portfolio review with finance (every Q).
+- Chaos drill on the synthetic engagement (every Q).
+- DR drill on staging (every Q per Rule 107).
+- Capacity model refresh.
+- Pack annual-review checklist for Italian Packs (every Q1, after April ISPRA update).
+
+### 12.5 Annual
+
+- Pen-test (Rule 60).
+- Tabletop exercise (Rule 167).
+- License-and-charter review (Rule 209).
+- Doctrine evolution session (Rule 209/210).
+- Y-end engagement-portfolio retrospective.
+
+---
+
+## 13. The Italian-flagship Pack — what it is and why
+
+Per Rule 88 and Charter §3.2, the Italian Region Pack is the flagship reference. The pack is the most complete, most tested, most documented Pack in the upstream. Other Region Packs (DE / ES / FR / GB / AT) are reviewed against the Italian flagship for thoroughness. The flagship's CHARTER, manifest, README, conformance tests, and Tradeoff Stanza are the template for new Region Packs.
+
+The Italian flagship comprises:
+
+- **`packs/region/it/`** — timezone Europe/Rome, locale it_IT.UTF-8, currency EUR with comma decimals, Italian national + Veneto regional holidays, ARERA / Garante / GDPR / NIS2 D.Lgs. 138/2024 invariants, default regulatory regimes (CSRD wave 2/3, Piano 5.0, Conto Termico, TEE, audit 102/2014, ETS, ARERA, GDPR, NIS2 Italia).
+- **`packs/factor/{ispra, gse, terna, aib}/`** — temporal-validity factor sources for the Italian electrical mix, the GSE renewable shares, the AIB residual mix, the Terna daily national mix.
+- **`packs/report/{esrs_e1, piano_5_0, conto_termico, tee, audit_dlgs102, monthly_consumption, co2_footprint}/`** — pure-function Builders for the seven Italian regulatory dossiers (with EFRAG XBRL / GSE XSD / ENEA XSD validation in Phase H Sprint S15–S16).
+- **`packs/protocol/{modbus_tcp, modbus_rtu, mbus, sunspec, pulse, ocpp_1_6, ocpp_2_0_1}/`** — the seven OT protocols of the Italian flagship (with IEC 61850 + OPC UA + MQTT Sparkplug B + BACnet + IEC 62056-21 added in Phase G Sprint S12–S14).
+
+The Italian flagship is the engagement-team's primary reference. New engagements that are Italian deployments compose entirely from the flagship's Packs + the engagement-fork's overlay; no new Pack development is required unless the engagement has a non-flagship vendor (e.g. a non-Schneider, non-Carlo-Gavazzi, non-Socomec meter).
+
+---
+
+## 14. The doctrine and the codebase as marketable assets
+
+Two non-traditional sales assets:
+
+### 14.1 The doctrine
+
+`docs/DOCTRINE.md` carries 210 rules. Each rule has a body, a Why, a How-to-apply, cross-refs. The conformance suite mechanically enforces a subset; the rest is named-CODEOWNERS reviewable. A regulator / auditor / acquirer / engagement-prospect who reads the doctrine sees the engineering substrate that makes our claims auditable. No surveyed competitor has a comparable artefact.
+
+### 14.2 The codebase + supply chain
+
+The codebase is open to the engaged client (proprietary licence; future open-source decision in Phase J Sprint S22 per ADR-0053). The supply chain is signed (Cosign keyless), attested (SLSA L2 → L3 plan), SBOM-tracked (Syft + DependencyTrack), vulnerability-scanned (Trivy + osv-scanner + govulncheck + CodeQL), and the manifest-lock is itself signed (Phase F Sprint S11). A regulator running their own diff-scan against our images can verify what they're auditing.
+
+Both assets are sold *together* with the engagement; they are not unbundled.
+
+---
+
+## 15. The engagement contract structure
+
+Two-part commercial agreement:
+
+- **Master Services Agreement (MSA).** Carries standard terms: SLA, data-processing under Art. 28 GDPR, liability caps, termination for cause, intellectual-property allocation (Macena retains template ownership; client owns engagement-fork and engagement-specific code), Italian-law / Verona-court jurisdiction, GDPR-DPA compliance.
+- **Engagement Order Form (per engagement).** Names the engagement license amount, the customisation services scope and budget, the deployment topology, the Pack matrix, the calendar, the Phase-gate definitions, the optional T2/T3 retainer terms, the regulatory-deliverable services rate-card.
+
+Annual maintenance is governed by an **Annual Maintenance Order** under the same MSA. T2/T3 retainers are governed by a **Retainer Order** with month-to-month terms after a 6-month minimum.
+
+The MSA is tested for the Italian SME procurement context — typical procurement cycle is 6–12 weeks from initial conversation to signed MSA + first Engagement Order. Macena retains a Verona-based legal counsel for MSA negotiation cycles.
+
+---
+
+## 16. Risks and mitigations (engagement-model-specific)
+
+- **Engagement-overrun risk.** A Phase 2/3 that overruns its scope. Mitigated by Rules 151/152 (Phase-bounded + change-order discipline) and the engagement-margin tracking in §3.9.
+- **Engagement-lead bus-factor.** A single engagement-lead is the only person who knows engagement #N. Mitigated by Rule 161 (T2/T3 on-call rotation), Rule 23 (substrate operable by single on-call), and the runbook discipline.
+- **Pack-extraction regression.** Sprint S6–S7 Pack extraction breaks an existing capability. Mitigated by RISK-024 (Plan §12.1) and the Mission II audit cases run as regression tests.
+- **Regulatory schema change mid-cycle.** ISPRA / GSE / ENEA / EFRAG publish a schema delta during a Pack release window. Mitigated by Rule 138 (annual review) + formal-spec validation (Rule 131) + 12% regulatory-agility staffing buffer (preserved from v1).
+- **Engagement-team hiring risk.** Phase H hires don't land on time. Mitigated by deferring T2/T3 expansion until the hire lands; founder remains engagement-lead for engagements #1–#3 if necessary.
+- **License-decision delay.** v1.0.0 license decision (BUSL / SSPL / AGPL / proprietary) is deferred past Phase J. Mitigated by ADR-0053 placeholder and the explicit Charter §14.1 decision-deferred record.
+
+---
+
+## 17. The contract with the reader of this document
+
+If you read this MODUS_OPERANDI v2:
+
+- as an engineer joining the engagement-team — read it alongside the Charter and the Doctrine. The Doctrine binds your PRs; the Charter binds your architectural moves; this document binds your commercial expectations.
+- as an engagement client — read it before signing the SoW. Section 3 governs the commercial mechanics; section 5 the lifecycle you'll experience; section 7 the security posture you can audit.
+- as a channel partner — read sections 3.10, 9, 10. The engagement-margin share, the founder-led + sales-led ramp, the industry-body engagement plan.
+- as an investor / strategic acquirer — read sections 11, 14, 16. The financial framing, the doctrine-and-codebase asset, the risks.
+- as a regulator / auditor — read sections 7, 13, 14. The compliance posture, the Italian-flagship Pack, the doctrine-and-codebase as auditable evidence.
+
+The contract: this document, the Charter, the Doctrine, and the Plan together form the commitment Macena has made to the GreenMetrics modular template. PRs / engagements / charters that violate the commitments without an explicit supersession are blocked. Quarterly office hours surface drift. Annual review re-affirms (or amends with evidence).
+
+The plan is the substrate. The doctrine is the bar. The charter is the spine. This document is the commercial face. The codebase is what the customer pays for.
+
+---
+
+*Document version 2.0 — adopted 2026-04-30. Supersedes v1 per ADR-0028. Reviewed at six-month intervals; next review 2026-10-30.*

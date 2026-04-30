@@ -10,10 +10,12 @@ Per Google SRE workbook: each SLO has a measurable SLI, a recording rule, an ale
 
 - **SLI:** `success_count / total_count` over rolling 5m, where success is HTTP status not in `5xx`.
 - **PromQL (recording rule `gm:slo_availability:ratio_5m`):**
+
   ```
   sum by (service) (rate(gm_http_requests_total{status!~"5.."}[5m]))
     / clamp_min(sum by (service) (rate(gm_http_requests_total[5m])), 1)
   ```
+
 - **SLO target:** 99.5% over 30-day rolling window.
 - **Burn-rate alert:** see `monitoring/prometheus/rules/slo.rules.yaml` — fast-burn (14.4× over 1h with 6× over 6h confirm) → critical.
 - **Runbook:** `docs/runbooks/db-outage.md`.

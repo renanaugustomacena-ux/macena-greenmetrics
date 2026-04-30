@@ -48,6 +48,12 @@ servers:
   - url: https://app.greenmetrics.it
     description: Production (eu-south-1)
 
+# Default security: every operation requires a Bearer JWT unless it explicitly
+# overrides with `security: []` (e.g. health, ready, live, metrics, login,
+# refresh, ingestPulse — those carry their own auth or are public).
+security:
+  - BearerAuth: []
+
 components:
 
   securitySchemes:
@@ -492,6 +498,7 @@ paths:
       summary: Health + dependency status (degraded-tolerant)
       operationId: getHealth
       tags: [Health]
+      security: []   # public probe; no auth.
       responses:
         "200":
           description: Service is up; dependencies may be degraded.
@@ -504,6 +511,7 @@ paths:
       summary: Readiness probe (strict — fails on dependency outage)
       operationId: getReady
       tags: [Health]
+      security: []   # public probe; no auth.
       responses:
         "200": { description: Ready to serve traffic. }
         "503": { $ref: "#/components/responses/Problem503" }
@@ -513,6 +521,7 @@ paths:
       summary: Liveness probe (always 200 once boot complete)
       operationId: getLive
       tags: [Health]
+      security: []   # public probe; no auth.
       responses:
         "200": { description: Process alive. }
 
@@ -521,6 +530,7 @@ paths:
       summary: Prometheus scrape endpoint
       operationId: getMetrics
       tags: [Observability]
+      security: []   # internal scrape endpoint; cluster-network restricted, no JWT.
       responses:
         "200":
           description: text/plain Prometheus exposition.
@@ -531,6 +541,7 @@ paths:
       summary: Issue access + refresh JWT
       operationId: login
       tags: [Auth]
+      security: []   # username + password auth flow; no prior JWT required.
       requestBody:
         required: true
         content:
@@ -551,6 +562,7 @@ paths:
       summary: Refresh access token
       operationId: refresh
       tags: [Auth]
+      security: []   # refresh-token-in-body auth flow; access JWT may be expired.
       requestBody:
         required: true
         content:
@@ -861,6 +873,7 @@ paths:
       summary: Pulse-counter webhook (HMAC-SHA256 signed)
       operationId: ingestPulse
       tags: [Pulse]
+      security: []   # HMAC-SHA256 signature verification — see X-Pulse-Signature.
       parameters:
         - { name: X-Pulse-Signature, in: header, required: true, schema: { type: string }, description: "HMAC-SHA256(body, PULSE_WEBHOOK_SECRET); compared constant-time." }
         - { name: X-Pulse-Timestamp, in: header, required: true, schema: { type: string, format: date-time }, description: "Replay window 5 min." }

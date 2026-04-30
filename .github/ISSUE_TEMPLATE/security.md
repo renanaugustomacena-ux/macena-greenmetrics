@@ -12,8 +12,8 @@ If this is an actual or suspected security vulnerability in GreenMetrics,
 **close this template now** and follow the responsible-disclosure process
 documented in [`SECURITY.md`](../../SECURITY.md):
 
-- **GitHub private vulnerability reporting:** https://github.com/renanaugustomacena-ux/macena-greenmetrics/security/advisories/new
-- **Email (PGP-encrypted preferred):** renanaugustomacena@gmail.com — subject `[SECURITY] GreenMetrics`.
+- **GitHub private vulnerability reporting:** <https://github.com/renanaugustomacena-ux/macena-greenmetrics/security/advisories/new>
+- **Email (PGP-encrypted preferred):** <renanaugustomacena@gmail.com> — subject `[SECURITY] GreenMetrics`.
 
 The maintainer commits to:
 

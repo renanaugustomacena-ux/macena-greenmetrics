@@ -167,3 +167,22 @@ tasks:
     desc: Regenerate docs/LAYERS.md Mermaid from docs/layers.yaml.
     dir: '{{.BACKEND_DIR}}'
     cmds: [make layers-doc]
+
+  'pack:list':
+    desc: List Packs present under packs/<kind>/<id>/ with manifest summary.
+    cmds:
+      - find packs -mindepth 3 -maxdepth 3 -name manifest.yaml -print 2>/dev/null | sort | xargs -r -n1 sh -c 'echo "── $1"; head -16 "$1"' _
+
+  'pack:validate':
+    desc: Validate every packs/<kind>/<id>/manifest.yaml against docs/contracts/pack-manifest.schema.json.
+    cmds:
+      - |
+        set -euo pipefail
+        if [ ! -d packs ]; then echo "no packs/ directory yet"; exit 0; fi
+        FAILED=0
+        for f in $(find packs -mindepth 3 -maxdepth 3 -name manifest.yaml 2>/dev/null); do
+          echo "validating $f"
+          npx -y -p ajv-cli@^5 -p ajv-formats@^3 ajv validate -c ajv-formats \
+            -s docs/contracts/pack-manifest.schema.json -d "$f" || FAILED=1
+        done
+        exit $FAILED

@@ -49,12 +49,11 @@ func (o RetryOpts) withDefaults() RetryOpts {
 // fn must return ErrPermanent (or wrap it) to abort retry.
 func Do[T any](ctx context.Context, opts RetryOpts, fn func(ctx context.Context) (T, error)) (T, error) {
 	opts = opts.withDefaults()
-	bo := backoff.NewExponentialBackOff(
-		backoff.WithInitialInterval(opts.InitialInterval),
-		backoff.WithMaxInterval(opts.MaxInterval),
-		backoff.WithMultiplier(opts.Multiplier),
-		backoff.WithRandomizationFactor(opts.RandomizationFactor),
-	)
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = opts.InitialInterval
+	bo.MaxInterval = opts.MaxInterval
+	bo.Multiplier = opts.Multiplier
+	bo.RandomizationFactor = opts.RandomizationFactor
 	var attempts uint64
 	op := func() (T, error) {
 		attempts++

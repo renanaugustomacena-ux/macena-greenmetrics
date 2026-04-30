@@ -158,6 +158,6 @@ For any question regarding contribution terms, licensing, or commercial
 collaboration:
 
   Renan Augusto Macena
-  renanaugustomacena@gmail.com
+  <renanaugustomacena@gmail.com>
 
 End of contribution terms.

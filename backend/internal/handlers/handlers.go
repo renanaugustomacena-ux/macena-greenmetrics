@@ -53,13 +53,19 @@ func Register(app *fiber.App, d Dependencies) {
 	// v1 endpoints. Default rate limit 60/min (v2.0 §12).
 	v1 := api.Group("/v1", RateLimit(d.Config.RateLimitPerMinute))
 
-	// CSRF for cookie-based clients; Bearer auth bypass is enabled.
-	v1.Use(CSRFMiddleware(DefaultCSRFConfig(d.Config.JWTSecret)))
-
 	auth := newAuthHandler(d)
-	// Stricter limit for login (brute-force mitigation, v2.0 §12).
+	// /auth/login and /auth/refresh are the authentication entry points —
+	// no session or token exists yet at the moment of the call, so CSRF
+	// (which protects an existing session from being replayed) cannot
+	// meaningfully apply. They are registered BEFORE `v1.Use(CSRF...)` so
+	// that the middleware does not gate the public auth flow.
+	// Stricter rate limit for login (brute-force mitigation, v2.0 §12).
 	v1.Post("/auth/login", RateLimit(d.Config.RateLimitLoginPerMinute), auth.Login)
 	v1.Post("/auth/refresh", RateLimit(d.Config.RateLimitLoginPerMinute), auth.Refresh)
+
+	// CSRF for cookie-based clients on state-changing routes; Bearer-auth
+	// clients bypass via the middleware's Authorization-header check.
+	v1.Use(CSRFMiddleware(DefaultCSRFConfig(d.Config.JWTSecret)))
 	v1.Post("/auth/logout", auth.Logout)
 
 	// Idempotency middleware (Rule 35 / RFC 9457). Backed by idempotency_keys

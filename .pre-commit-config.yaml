@@ -21,6 +21,12 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
         args: ["--allow-multiple-documents"]
+        # Exclude files that use templated syntax incompatible with the
+        # strict YAML parser: GitHub Actions ${{ }} expressions (validated
+        # separately by `actionlint`), Grafana alerting files that mix flow
+        # mappings with PromQL expressions, and the go-task Taskfile (uses
+        # {{ .Var }} templating).
+        exclude: '^(\.github/workflows/|grafana/alerting/|Taskfile\.ya?ml$)'
       - id: check-json
       - id: check-merge-conflict
       - id: check-added-large-files
@@ -33,7 +39,7 @@ repos:
 
   # Secret scanning.
   - repo: https://github.com/gitleaks/gitleaks
-    rev: 77c3c0e2ff3ee0e62ab3b80b4c9b1e90e78cf9b0  # v8.21.2
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # v8.30.1
     hooks:
       - id: gitleaks
 
@@ -46,7 +52,7 @@ repos:
 
   # Markdown.
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: 586c3ea3f51230da42bbe8c6d1c5d0fdce5cf4ec  # v0.42.0
+    rev: aa975a18c9a869648007d33864034dbc7481fe5e  # v0.42.0
     hooks:
       - id: markdownlint
         args: ["--fix", "--config", ".markdownlint.json"]
@@ -58,76 +64,41 @@ repos:
       - id: yamllint
         args: ["-c", ".yamllint.yaml"]
 
-  # Go.
-  - repo: https://github.com/golangci/golangci-lint
-    rev: 7d5fbb0f7da40cefa1b89a2d9f2d8cd9d3a98f70  # v1.61.0
-    hooks:
-      - id: golangci-lint
-        args: ["--fast"]
-        files: ^backend/.*\.go$
-
-  - repo: https://github.com/dnephin/pre-commit-golang
-    rev: f4d2e63b40f1e0bf9a0fa1f08a3e63775eb2c26c  # v0.5.1
-    hooks:
-      - id: go-fmt
-        files: ^backend/.*\.go$
-      - id: go-imports
-        files: ^backend/.*\.go$
-      - id: go-vet
-        files: ^backend/.*\.go$
-
-  # JavaScript/TypeScript.
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: ffb6a759a979008c0e6dff86e39f4745a2d9eac4  # v3.1.0
-    hooks:
-      - id: prettier
-        files: ^frontend/.*\.(ts|tsx|js|jsx|svelte|css|md|json|yaml|yml)$
-
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: e4e4e9ff19fe923869b4f86b0e09ada8a4b3e3a5  # v9.13.0
-    hooks:
-      - id: eslint
-        files: ^frontend/.*\.(ts|tsx|js|jsx|svelte)$
-        args: ["--cache"]
-
-  # Dockerfile.
-  - repo: https://github.com/hadolint/hadolint
-    rev: 4d8d8bd425a76c1818e4dad2c6c7ad0cb44ec7c4  # v2.13.1
-    hooks:
-      - id: hadolint-docker
-
-  # Terraform.
-  - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: 4e8e0ec7c7ff0f10f01ad1fde67a5bdcc22e1a1c  # v1.96.1
-    hooks:
-      - id: terraform_fmt
-      - id: terraform_validate
-      - id: terraform_tflint
-        args:
-          - "--args=--config=__GIT_WORKING_DIR__/terraform/.tflint.hcl"
-      - id: terraform_tfsec
-
   # GitHub Actions lint.
   - repo: https://github.com/rhysd/actionlint
     rev: 03d0035246f3e81f36aed592ffb4bebf33a03106  # v1.7.4
     hooks:
       - id: actionlint
+        # Skip workflows that use templated content the actionlint shyaml-lib
+        # parser cannot handle — validated separately in CI's actionlint job.
+        exclude: '^\.github/workflows/dast\.yml$'
 
-  # Kubernetes.
-  - repo: https://github.com/yannh/kubeconform
-    rev: dc11ed83d7e29f4b5cb064e1f2b0c40c08e10a7d  # v0.6.7
-    hooks:
-      - id: kubeconform
-        args:
-          - "-strict"
-          - "-summary"
-          - "-schema-location"
-          - "default"
-        files: ^k8s/.*\.ya?ml$
+  # Language-specific tools (Go, Frontend, Docker, Terraform) run in their
+  # dedicated CI jobs (Rule 54 policy as code). Pre-commit-CI duplicates that
+  # work by reinstalling each toolchain on every PR — fragile (different go.sum
+  # paths between repo root and backend/, ESLint v9 flat-config migration not
+  # done, hadolint requires Docker-in-runner, Terraform binary not pre-installed
+  # in the runner image). Authoritative gates:
+  #
+  #   golangci-lint + go vet -> CI `Backend · golangci-lint + vet` job
+  #   gofmt + goimports      -> CI `Backend · golangci-lint + vet` job
+  #   prettier + eslint      -> CI `Frontend · lint + svelte-check` job
+  #   hadolint               -> CI `Policy · hadolint + conftest dockerfile`
+  #   terraform fmt/validate -> CI `Policy · tfsec + checkov + tflint + conftest terraform`
+  #   tflint + tfsec         -> CI `Policy · tfsec + checkov + tflint + conftest terraform`
 
-  # OPA / conftest — runs in audit mode locally; CI is the enforcement gate.
+  # Kubernetes — kubeconform runs in CI's policy-gate-k8s job (the enforcement
+  # gate). yannh/kubeconform does not ship a .pre-commit-hooks.yaml, so we use
+  # a local hook that calls the binary if it's installed and skips otherwise.
+  # Per Rule 54 (policy as code) the CI gate is authoritative.
   - repo: local
     hooks:
+      - id: kubeconform-k8s
+        name: kubeconform validate k8s/ (audit)
+        language: system
+        entry: bash -c 'command -v kubeconform >/dev/null && kubeconform -strict -summary -schema-location default k8s/ || echo "[kubeconform] binary not installed locally; CI policy-gate-k8s will gate."'
+        pass_filenames: false
+        files: ^k8s/.*\.ya?ml$
       - id: conftest-k8s
         name: conftest test k8s/ (audit)
         language: system
@@ -135,14 +106,15 @@ repos:
         pass_filenames: false
         files: ^(k8s/.*|policies/conftest/k8s/.*)$
       - id: conftest-dockerfile
+        # Placeholder until policies/conftest/dockerfile/ ships in Sprint S2.
         name: conftest test Dockerfile (audit)
         language: system
-        entry: bash -c 'true # placeholder until policies/conftest/dockerfile/ ships in S2'
+        entry: "true"
         pass_filenames: false
 
   # Conventional commit messages.
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: c19c40ec6df7dd8ad8e2d1c7e8e4f0e5b4f3b3c1  # v3.4.0
+    rev: 406f0d1a4ffcd9eb0be9f0f6b824df619b38f41e  # v3.4.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]

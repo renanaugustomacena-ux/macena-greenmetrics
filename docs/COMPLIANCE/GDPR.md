@@ -25,7 +25,7 @@
 
 ## 3. DSAR procedure
 
-1. DPO receives request via dpo@greenmetrics.it.
+1. DPO receives request via <dpo@greenmetrics.it>.
 2. Identity verification (out-of-band).
 3. Operator runs `DELETE /api/v1/tenants/<tenant_id>/users/<email>` (admin RBAC required).
 4. Cascade purge: user → audit_log redaction → session revocation → JWT KID rotation if requested.

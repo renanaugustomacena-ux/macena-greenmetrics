@@ -15,9 +15,10 @@ echo
 # --- 1. Unattached EBS volumes (> 7d) ---
 
 echo "## Unattached EBS volumes (potential waste)"
+CUTOFF_7D="$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)"
 aws ec2 describe-volumes --region "$REGION" \
   --filters Name=status,Values=available \
-  --query 'Volumes[?CreateTime<`'$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)'`].[VolumeId,Size,VolumeType,CreateTime,Tags[?Key==`Name`].Value|[0]]' \
+  --query "Volumes[?CreateTime<\`${CUTOFF_7D}\`].[VolumeId,Size,VolumeType,CreateTime,Tags[?Key==\`Name\`].Value|[0]]" \
   --output table || echo "(no EBS API access or none found)"
 echo
 
@@ -33,8 +34,9 @@ echo
 # --- 3. Orphaned secrets ---
 
 echo "## Secrets Manager — last accessed > 90 days ago"
+CUTOFF_90D="$(date -u -d '90 days ago' +%Y-%m-%dT%H:%M:%SZ)"
 aws secretsmanager list-secrets --region "$REGION" \
-  --query 'SecretList[?LastAccessedDate<`'$(date -u -d '90 days ago' +%Y-%m-%dT%H:%M:%SZ)'`].[Name,LastAccessedDate,LastChangedDate]' \
+  --query "SecretList[?LastAccessedDate<\`${CUTOFF_90D}\`].[Name,LastAccessedDate,LastChangedDate]" \
   --output table || true
 echo
 

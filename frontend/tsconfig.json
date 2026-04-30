@@ -13,6 +13,5 @@
     "target": "ES2022",
     "module": "ESNext",
     "types": ["vite/client", "node"]
-  },
-  "include": ["src/**/*.ts", "src/**/*.svelte", "src/**/*.d.ts", "tests/**/*.ts"]
+  }
 }
