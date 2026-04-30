@@ -253,9 +253,11 @@ jobs:
       - name: osv-scanner (cross-source vuln check)
         uses: google/osv-scanner-action/osv-scanner-action@v2.3.5
         with:
+          # `--skip-git` was a v1 flag (removed in v2; git-history scanning is
+          # opt-in now via `scan git`). Remaining args: recursive directory
+          # scan from the repo root.
           scan-args: |-
             --recursive
-            --skip-git
             ./
 
   license:
