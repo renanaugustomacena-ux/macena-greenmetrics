@@ -4,6 +4,9 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Italian-flagship palette: regulator-grade, calm, slightly saturated.
+        // forest = primary action, brand. earth = warm secondary. cream =
+        // background. saffron + rosso provide warning/danger semantics.
         forest: {
           50:  '#f0fdf4',
           100: '#dcfce7',
@@ -34,11 +37,37 @@ export default {
           50:  '#fffef9',
           100: '#fefae0',
           200: '#fdf4c9',
-          300: '#faeca8'
+          300: '#faeca8',
+          400: '#f6dc7a'
+        },
+        saffron: {
+          50:  '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          500: '#f59e0b',
+          700: '#b45309',
+          900: '#78350f'
+        },
+        rosso: {
+          50:  '#fef2f2',
+          100: '#fee2e2',
+          200: '#fecaca',
+          500: '#ef4444',
+          700: '#b91c1c',
+          900: '#7f1d1d'
         }
       },
       fontFamily: {
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif']
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        mono: ['"JetBrains Mono"', '"Fira Code"', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+      },
+      boxShadow: {
+        card: '0 1px 2px 0 rgba(20, 83, 45, 0.04), 0 1px 3px 0 rgba(20, 83, 45, 0.06)',
+        elevated: '0 4px 12px -2px rgba(20, 83, 45, 0.10), 0 2px 4px -2px rgba(20, 83, 45, 0.08)'
+      },
+      animation: {
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
       }
     }
   },
