@@ -74,7 +74,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Fixed
 
-- (none yet.)
+- **CI hotfix — `.pre-commit-config.yaml` rev SHAs.** Nine of fourteen pinned hook SHAs did not exist in their upstream repositories (gitleaks, markdownlint-cli, golangci-lint, dnephin/pre-commit-golang, mirrors-eslint, hadolint, pre-commit-terraform, kubeconform, conventional-pre-commit), causing every CI run to fail on `pre-commit run --all-files` at hook-environment-init time with `fatal: unable to read tree`. SHAs corrected to match each existing version label; gitleaks bumped from invalid v8.21.2 pin to valid v8.30.1 (`83d9cd684c87d95d656c1458ef04895a7f1cbd8e`). All 14 hook SHAs re-verified via `gh api repos/<owner>/<repo>/commits/<sha>` after the fix. Per Rule 53 (pin every dependency to a digest); Dependabot weekly bumps continue from the corrected baseline.
 
 ---
 

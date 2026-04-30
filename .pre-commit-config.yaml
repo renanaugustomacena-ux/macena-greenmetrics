@@ -33,7 +33,7 @@ repos:
 
   # Secret scanning.
   - repo: https://github.com/gitleaks/gitleaks
-    rev: 77c3c0e2ff3ee0e62ab3b80b4c9b1e90e78cf9b0  # v8.21.2
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # v8.30.1
     hooks:
       - id: gitleaks
 
@@ -46,7 +46,7 @@ repos:
 
   # Markdown.
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: 586c3ea3f51230da42bbe8c6d1c5d0fdce5cf4ec  # v0.42.0
+    rev: aa975a18c9a869648007d33864034dbc7481fe5e  # v0.42.0
     hooks:
       - id: markdownlint
         args: ["--fix", "--config", ".markdownlint.json"]
@@ -60,14 +60,14 @@ repos:
 
   # Go.
   - repo: https://github.com/golangci/golangci-lint
-    rev: 7d5fbb0f7da40cefa1b89a2d9f2d8cd9d3a98f70  # v1.61.0
+    rev: a1d6c560de1a193a0c68ffed68cd5928ef39e884  # v1.61.0
     hooks:
       - id: golangci-lint
         args: ["--fast"]
         files: ^backend/.*\.go$
 
   - repo: https://github.com/dnephin/pre-commit-golang
-    rev: f4d2e63b40f1e0bf9a0fa1f08a3e63775eb2c26c  # v0.5.1
+    rev: fb24a639f7c938759fe56eeebbb7713b69d60494  # v0.5.1
     hooks:
       - id: go-fmt
         files: ^backend/.*\.go$
@@ -84,7 +84,7 @@ repos:
         files: ^frontend/.*\.(ts|tsx|js|jsx|svelte|css|md|json|yaml|yml)$
 
   - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: e4e4e9ff19fe923869b4f86b0e09ada8a4b3e3a5  # v9.13.0
+    rev: b57b7398617489b9042a6561733d7eed33b331e2  # v9.13.0
     hooks:
       - id: eslint
         files: ^frontend/.*\.(ts|tsx|js|jsx|svelte)$
@@ -92,13 +92,13 @@ repos:
 
   # Dockerfile.
   - repo: https://github.com/hadolint/hadolint
-    rev: 4d8d8bd425a76c1818e4dad2c6c7ad0cb44ec7c4  # v2.13.1
+    rev: 33deb7817c88475caa1ce7d832922ff0f674fa15  # v2.13.1
     hooks:
       - id: hadolint-docker
 
   # Terraform.
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: 4e8e0ec7c7ff0f10f01ad1fde67a5bdcc22e1a1c  # v1.96.1
+    rev: 89f45610a846f56273a6c4290b3c42534175949e  # v1.96.1
     hooks:
       - id: terraform_fmt
       - id: terraform_validate
@@ -115,7 +115,7 @@ repos:
 
   # Kubernetes.
   - repo: https://github.com/yannh/kubeconform
-    rev: dc11ed83d7e29f4b5cb064e1f2b0c40c08e10a7d  # v0.6.7
+    rev: 1bd44986dd3d281725afab6b173770ec86b454fc  # v0.6.7
     hooks:
       - id: kubeconform
         args:
@@ -142,7 +142,7 @@ repos:
 
   # Conventional commit messages.
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: c19c40ec6df7dd8ad8e2d1c7e8e4f0e5b4f3b3c1  # v3.4.0
+    rev: 406f0d1a4ffcd9eb0be9f0f6b824df619b38f41e  # v3.4.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
