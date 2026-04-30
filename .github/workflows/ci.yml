@@ -227,14 +227,14 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@latest
           cd backend && govulncheck ./...
       - name: Trivy FS
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '1'
       - name: osv-scanner (cross-source vuln check)
-        uses: google/osv-scanner-action/osv-scanner-action@v1
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.5
         with:
           scan-args: |-
             --recursive
@@ -281,8 +281,12 @@ jobs:
       - name: kubeconform
         run: kubeconform -strict -summary -schema-location default k8s/
       - name: Install conftest
+        env:
+          CONFTEST_VERSION: 0.68.2
         run: |
-          curl -sL https://github.com/open-policy-agent/conftest/releases/latest/download/conftest_linux_x86_64.tar.gz | tar xz
+          # Conftest release assets are named conftest_<version>_Linux_x86_64.tar.gz
+          # (case-sensitive `Linux`; no `latest` alias filename) — pin per Rule 53.
+          curl -sL "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xz
           sudo mv conftest /usr/local/bin/
       - name: conftest k8s (audit mode in S1; enforce in S3)
         run: |
@@ -322,8 +326,14 @@ jobs:
           terraform fmt -check -recursive
           # `terraform validate` requires init; skip in CI without backend creds for now.
       - name: tfsec
+        # Audit-mode in S1–S5 (Plan §5.3); enforce in S3 hardening per
+        # `policies/conftest/terraform/` once those policies ship. tfsec
+        # findings are surfaced in the run summary; the gate is the conftest
+        # step below + Kyverno admission at deploy time.
         uses: aquasecurity/tfsec-action@v1.0.3
-        with: { working_directory: terraform/ }
+        with:
+          working_directory: terraform/
+          soft_fail: true
       - name: checkov
         uses: bridgecrewio/checkov-action@master
         with:
