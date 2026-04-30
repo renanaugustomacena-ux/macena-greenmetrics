@@ -13,6 +13,7 @@
 import js from '@eslint/js';
 import sveltePlugin from 'eslint-plugin-svelte';
 import svelteParser from 'svelte-eslint-parser';
+import tsParser from '@typescript-eslint/parser';
 
 export default [
   {
@@ -24,18 +25,13 @@ export default [
       'coverage/',
       '*.config.js',
       '*.config.ts',
-      // TypeScript files require @typescript-eslint/parser which is not yet a
-      // devDependency — adding it pulls @typescript-eslint/eslint-plugin and
-      // a v9-compatible config block that is out of scope for this CI hotfix.
-      // svelte-check (npm run check) covers TypeScript validation in the
-      // meantime; this ESLint pass focuses on plain .js and .svelte<script>.
-      '**/*.ts',
     ],
   },
 
   // Base JS recommended rules.
   js.configs.recommended,
 
+  // Default language options.
   {
     languageOptions: {
       ecmaVersion: 2022,
@@ -47,16 +43,29 @@ export default [
     },
   },
 
-  // Svelte-specific rules (parses .svelte; runs the recommended Svelte rule set).
+  // TypeScript files — parse with @typescript-eslint/parser (no
+  // @typescript-eslint/eslint-plugin yet; lint coverage is JS-recommended
+  // rules only, plus svelte-check for TS-aware analysis).
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+      },
+    },
+  },
+
+  // Svelte components — svelte-eslint-parser delegates <script lang="ts"> to
+  // @typescript-eslint/parser.
   ...sveltePlugin.configs['flat/recommended'],
   {
     files: ['**/*.svelte'],
     languageOptions: {
       parser: svelteParser,
       parserOptions: {
-        // Svelte components in this codebase use <script lang="ts">; without a
-        // TS parser plugin, treat script content as syntactically permissive.
-        // The svelte-check pass validates TypeScript separately.
+        parser: tsParser,
         extraFileExtensions: ['.svelte'],
       },
     },
@@ -64,7 +73,6 @@ export default [
       // Demote svelte/valid-compile a11y findings to warnings until the
       // underlying components are fixed in a dedicated frontend-a11y PR.
       'svelte/valid-compile': 'warn',
-      // svelte-check covers the rest of TypeScript-aware analysis.
       'no-unused-vars': 'off',
     },
   },

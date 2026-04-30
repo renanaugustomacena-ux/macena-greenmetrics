@@ -81,12 +81,10 @@ jobs:
       - name: go vet
         run: go vet ./...
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        # Action v7+ supports golangci-lint v2.x. v6 only supports v1 (which
+        # is built with Go 1.24 and refuses to lint Go 1.26 code).
+        uses: golangci/golangci-lint-action@v7
         with:
-          # `latest` resolves to v1.64.8 which was built with Go 1.24 and
-          # refuses to lint a project pinned at Go 1.26 (`Go language version
-          # used to build golangci-lint is lower than the targeted Go version`).
-          # v2.11+ is built with current Go and runs fine.
           version: v2.11.4
           working-directory: backend
 
@@ -221,6 +219,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # Gitleaks needs full git history to scan the diff between base and
+        # head; the default shallow clone makes it fail with "stderr is not
+        # empty / failed to scan Git repository".
+        with: { fetch-depth: 0 }
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
