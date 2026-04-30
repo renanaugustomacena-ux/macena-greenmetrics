@@ -3,12 +3,11 @@ module github.com/greenmetrics/backend
 go 1.26
 
 require (
-
 	// Sprint S2 additions (run `go mod tidy` to materialise versions).
 	github.com/go-playground/validator/v10 v10.22.1 // ADR-0012
 	github.com/goburrow/modbus v0.1.0
 	github.com/gofiber/contrib/otelfiber v1.0.10
-	github.com/gofiber/fiber/v2 v2.52.11
+	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/hibiken/asynq v0.25.1 // ADR-0014
@@ -57,7 +56,7 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/redis/go-redis/v9 v9.7.0 // indirect
+	github.com/redis/go-redis/v9 v9.7.3 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
