@@ -1,9 +1,21 @@
 # ITALIAN-COMPLIANCE.md — GreenMetrics
 
 **Project:** GreenMetrics
-**Last reviewed:** 2026-04-17
+**Last reviewed:** 2026-04-30 (charter-alignment annotation added; regulatory citations unchanged)
 **Scope:** mapping of Italian and European regulatory obligations to GreenMetrics
 code paths, seed data, and operational guarantees.
+
+> **Framing note (2026-04-30 charter alignment):** GreenMetrics is delivered
+> as a **modular template + engagement** model per `docs/MODULAR-TEMPLATE-CHARTER.md`
+> §2 — not as a hosted SaaS. Italian regulatory obligations cited below are
+> satisfied at the **per-engagement deployment** level (the deployment is the
+> regulatory artefact-producing surface), with the Italian-flagship Region
+> Pack (`packs/region/it/`) + Factor Packs (ISPRA / GSE / Terna / AIB) +
+> Report Packs (ESRS E1 / Piano 5.0 / Conto Termico / TEE / audit 102/2014)
+> being the load-bearing components per Rule 88. Code-path references below
+> currently point at `internal/services/`; those paths migrate into Pack
+> directories during Phase E Sprint S6 (Plan §5.4) — the regulatory mapping
+> stays unchanged.
 
 This file is the source of truth for the sales and legal team. Every citation
 is traceable to a module in the codebase; every code path that ships as a
