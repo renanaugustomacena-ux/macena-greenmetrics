@@ -1,0 +1,42 @@
+# required-packs.yaml — declarative list of Packs required for this deployment.
+#
+# Doctrine refs: Rule 75 (capabilities declared, not discovered), Rule 73 (boot
+# writes a manifest lock), Rule 70 (Pack manifests itself).
+# Charter ref: §3.2 (Pack flavours), §4 (Pack contract).
+#
+# At boot the Pack-loader compares this file against the manifests it discovers
+# under packs/<kind>/<id>/. A capability listed here that is not satisfied by
+# at least one loaded Pack is a boot refusal. A Pack discovered but not listed
+# here is a warning (the system runs, but the audit log records the surplus).
+#
+# This file is engagement-overridable per Rule 82: an engagement fork places
+# its overrides in engagements/<client>/config/required-packs.yaml; the loader
+# composes Core defaults < Pack defaults < engagement overrides.
+#
+# Phase E Sprint S5 ships an empty list (no Packs are extracted yet). Sprint
+# S6 begins populating Italian Region + Italian Factor + Italian Report Packs.
+# Sprint S7 adds Italian Protocol Packs. Sprint S8 adds Identity Packs.
+
+required_capabilities: []
+
+# Example shape post-extraction (Sprint S6+):
+# required_capabilities:
+#   - region.it
+#   - factor.source.ispra
+#   - factor.source.gse
+#   - factor.source.terna
+#   - factor.source.aib
+#   - report.builder.esrs_e1
+#   - report.builder.piano_5_0
+#   - report.builder.conto_termico
+#   - report.builder.tee
+#   - report.builder.audit_dlgs102
+#   - report.builder.monthly_consumption
+#   - report.builder.co2_footprint
+#   - protocol.modbus.tcp
+#   - protocol.modbus.rtu
+#   - protocol.mbus
+#   - protocol.sunspec
+#   - protocol.pulse
+#   - protocol.ocpp.v1_6
+#   - identity.local_db

@@ -1,10 +1,12 @@
 # 0001 — Platform doctrine adoption
 
-**Status:** Accepted
+**Status:** Accepted (superseded in part by ADR-0021 on 2026-04-30)
 **Date:** 2026-04-25
 **Authors:** @ciupsciups
 **Doctrine rules:** all 60 (Platform 9–28, Backend 29–48, DevSecOps 49–68)
 **Review date:** 2026-10-25
+
+> **2026-04-30 supersession note.** ADR-0021 supersedes the "regulated-industry SaaS" framing in this ADR's Tradeoff Stanza with "regulated-industry engagement template" framing per `docs/MODULAR-TEMPLATE-CHARTER.md` §2. The 60-rule doctrine adopted here is preserved verbatim and extended to 210 rules in `docs/DOCTRINE.md`. The operational plan referenced here covered Sprints S1–S4; the post-S4 plan is `docs/PLAN.md` (Phases E–J across Sprints S5–S22). All other clauses of this ADR (constraints, alternatives considered, consequences, residual risks, references) remain in effect.
 
 ## Context
 
