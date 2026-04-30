@@ -3,7 +3,16 @@
 **Owner:** `@greenmetrics/secops`.
 **Doctrine refs:** Rule 55 (continuous threat modelling), Rule 61 (compliance ≠ goal), Rule 67 (transparency).
 **Authoring date:** 2026-04-25.
+**Last reviewed:** 2026-04-30 (charter-alignment annotation added; risk scoring unchanged).
 **Review cadence:** monthly for HIGH/CRITICAL changes; quarterly full re-scoring.
+
+> **Framing note (2026-04-30 charter alignment):** The deployment model is
+> single-tenant by default per `docs/MODULAR-TEMPLATE-CHARTER.md` §11.
+> "Cross-tenant" risks below (e.g. RISK-007) remain in scope **as defence in
+> depth** — the engineering controls (RLS, RBAC, repository-level WHERE)
+> survive across deployment modes per Charter §2 / Plan §5.3, and are
+> additionally load-bearing in any partner-hosted multi-tenant configuration.
+> Risk likelihoods reflect both modes.
 
 Every Rego rule in `policies/conftest/` and `policies/kyverno/` references its `RISK-NNN` mitigation target. Every regulatory citation in `docs/ITALIAN-COMPLIANCE.md` is annotated with `MITIGATES: RISK-NNN` where applicable.
 

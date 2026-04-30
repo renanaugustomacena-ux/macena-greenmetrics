@@ -1,5 +1,13 @@
 # SECURITY — GreenMetrics
 
+> **Framing note (2026-04-30 charter alignment):** GreenMetrics is delivered
+> as a **modular template + engagement** model per `docs/MODULAR-TEMPLATE-CHARTER.md`
+> §2. Each engagement runs a **single-tenant deployment by default**; multi-tenant
+> is a partner-hosted opt-in (Charter §11). The tenant primitive (`tenant_id`,
+> RLS policies, repository-level WHERE filters) below is **engineering hygiene
+> preserved across deployment modes** — not multi-tenant SaaS framing. See
+> `docs/THREAT-MODEL.md` §2 (Tenancy model) for the tenancy-mode threat surface.
+
 ## 1. Threat model (summary)
 
 - **Ingestion attack surface:** Modbus-TCP simulator (dev-only) on :5020 is
