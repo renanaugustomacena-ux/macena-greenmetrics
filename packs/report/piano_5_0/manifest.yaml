@@ -1,0 +1,23 @@
+id: report-piano_5_0
+kind: report
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  Piano Transizione 5.0 attestation Pack — produces the quantitative
+  energy-savings + tax-credit calculation for the DL 19/2024 art. 38
+  incentive scheme as modified by L. 207/2024 (Legge di Bilancio 2025).
+  Implements both the dual-criterion savings test (struttura produttiva
+  vs processi interessati — higher tier wins) and the per-bracket tax-
+  credit math. EGE counter-signature on the energy baseline is required
+  before signed-state transition (Rule 137); the Pack does not block at
+  generation time. Narrative content (ex-ante / ex-post EGE certifications,
+  Allegato A categorisation, investment description) is bundled by the
+  engagement-fork's reporting orchestrator from client-supplied content.
+capabilities:
+  - report-builder-piano_5_0
+dependencies:
+  - factor-source-ispra
+  - factor-source-gse
