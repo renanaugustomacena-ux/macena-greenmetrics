@@ -459,6 +459,32 @@ components:
               detail:
                 type: string
 
+    DSARExportResponse:
+      type: object
+      required: [job_id, tenant_id, user_id, state, requested_at, sla_deadline]
+      properties:
+        job_id:       { type: string, format: uuid }
+        tenant_id:    { type: string, format: uuid }
+        user_id:      { type: string, format: uuid }
+        state:        { type: string, enum: [queued, in_progress, ready, failed] }
+        bundle_url:   { type: string, format: uri, description: "Signed S3 URL to the export zip (populated when state=ready). Phase F." }
+        requested_at: { $ref: "#/components/schemas/Timestamp" }
+        sla_deadline: { $ref: "#/components/schemas/Timestamp", description: "GDPR Art. 12 §3 30-day window." }
+        note:         { type: string, description: "Free-form note (e.g. Phase E stub message)." }
+
+    DSAREraseResponse:
+      type: object
+      required: [job_id, tenant_id, user_id, state, requested_at, sla_deadline]
+      properties:
+        job_id:          { type: string, format: uuid }
+        tenant_id:       { type: string, format: uuid }
+        user_id:         { type: string, format: uuid }
+        state:           { type: string, enum: [queued, in_progress, completed, failed] }
+        requested_at:    { $ref: "#/components/schemas/Timestamp" }
+        sla_deadline:    { $ref: "#/components/schemas/Timestamp" }
+        crypto_shred_at: { $ref: "#/components/schemas/Timestamp", description: "When the per-tenant DEK was rotated (set when state=completed). Phase F." }
+        note:            { type: string }
+
   responses:
     Problem400:
       description: Bad Request (validation failure, malformed body).
@@ -900,6 +926,62 @@ paths:
         "401": { $ref: "#/components/responses/Problem401" }
         "413": { $ref: "#/components/responses/Problem413" }
 
+  /api/v1/dsar/{tenant_id}/{user_id}/export:
+    post:
+      summary: GDPR DSAR — Data Subject Access Request, export bundle
+      operationId: dsarExport
+      tags: [DSAR]
+      description: |
+        Queues an export of every personal-data row attributable to the named user
+        across the tenant (readings, reports, audit log, identity records, etc.).
+        Reserved to the **DPO role**. Returns 202 with a JobID + 30-day SLA
+        deadline per GDPR Art. 12 §3. Phase E ships the queue surface; the
+        actual bundling cascade lands in Phase F Sprint S10.
+      parameters:
+        - { name: tenant_id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: user_id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "202":
+          description: DSAR export queued.
+          headers:
+            Location:
+              description: Job-status URL
+              schema: { type: string, format: uri }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DSARExportResponse" }
+        "400": { $ref: "#/components/responses/Problem400" }
+        "401": { $ref: "#/components/responses/Problem401" }
+        "403": { $ref: "#/components/responses/Problem403" }
+
+  /api/v1/dsar/{tenant_id}/{user_id}/erase:
+    post:
+      summary: GDPR DSAR — Data Subject Access Request, erase
+      operationId: dsarErase
+      tags: [DSAR]
+      description: |
+        Queues an erasure (Art. 17) for the named user — crypto-shredding the
+        per-tenant DEK (Rule 184), pseudonymising PII columns, preserving the
+        audit log itself per Rule 62. Reserved to the **DPO role**. Returns 202
+        with a JobID + 30-day SLA deadline. Phase E ships the queue surface;
+        the actual cascade lands in Phase F Sprint S10.
+      parameters:
+        - { name: tenant_id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: user_id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "202":
+          description: DSAR erase queued.
+          headers:
+            Location:
+              description: Job-status URL
+              schema: { type: string, format: uri }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DSAREraseResponse" }
+        "400": { $ref: "#/components/responses/Problem400" }
+        "401": { $ref: "#/components/responses/Problem401" }
+        "403": { $ref: "#/components/responses/Problem403" }
+
 tags:
   - { name: Health, description: "Liveness, readiness, dependency status." }
   - { name: Observability, description: "Prometheus scrape." }
@@ -911,3 +993,4 @@ tags:
   - { name: Alerts, description: "Threshold + anomaly alerts." }
   - { name: EmissionFactors, description: "ISPRA / Terna / AIB factor catalogue." }
   - { name: Pulse, description: "HMAC-signed pulse-counter webhook." }
+  - { name: DSAR, description: "GDPR Data Subject Access Request — export + erase. DPO-only." }

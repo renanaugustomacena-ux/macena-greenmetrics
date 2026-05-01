@@ -127,6 +127,17 @@ func Register(app *fiber.App, d Dependencies) {
 	protected.Get("/tenants/me", tenants.GetSelf)
 	protected.Put("/tenants/me", security.RequirePermission(security.PermTenantsAdmin), tenants.UpdateSelf)
 
+	// --- GDPR DSAR (Data Subject Access Request) -----------------------------
+	// Both endpoints are reserved to the DPO role per Plan §5.4.7. The audit
+	// log records every invocation regardless of fulfillment state — this is
+	// the regulator's evidence that the request was received within the GDPR
+	// Art. 15 / Art. 17 30-day window.
+	dsar := newDSARHandler(d)
+	protected.Post("/dsar/:tenant_id/:user_id/export",
+		security.RequirePermission(security.PermDSARExport), dsar.Export)
+	protected.Post("/dsar/:tenant_id/:user_id/erase",
+		security.RequirePermission(security.PermDSARErase), dsar.Erase)
+
 	// --- Alerts --------------------------------------------------------------
 	alerts := newAlertsHandler(d)
 	protected.Get("/alerts", security.RequirePermission(security.PermAlertsRead), alerts.List)
