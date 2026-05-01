@@ -10,7 +10,7 @@
 // running the generator first; CI re-runs the generator and asserts the
 // committed file matches the freshly-generated one.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
@@ -19,6 +19,20 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..', '..');
 const corePath = resolve(repoRoot, 'config', 'branding.yaml');
 const outPath = resolve(here, '..', 'src', 'lib', 'branding.generated.ts');
+
+// Inside the frontend/ Docker build context, config/branding.yaml is not
+// present — only frontend/ is COPYed in. The committed branding.generated.ts
+// is the cached fallback for that case. Local dev + CI checkout (which sees
+// the whole repo) regenerate from source-of-truth YAML.
+if (!existsSync(corePath)) {
+	console.log(
+		`gen-branding: config/branding.yaml not found at ${corePath} — keeping ` +
+			`existing ${outPath} as build-time cache (Docker build context only ` +
+			`sees frontend/; engagement Phase 0 Discovery regenerates this file ` +
+			`when overriding branding.yaml at engagements/<id>/config/branding.yaml).`,
+	);
+	process.exit(0);
+}
 
 const yamlText = readFileSync(corePath, 'utf-8');
 const branding = parseYaml(yamlText);
