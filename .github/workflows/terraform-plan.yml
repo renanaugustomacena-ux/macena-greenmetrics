@@ -38,15 +38,15 @@ jobs:
       TF_IN_AUTOMATION: "true"
       TF_VAR_environment: ${{ matrix.env }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.8.5'
           terraform_wrapper: false
 
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/greenmetrics-github-deploy
           aws-region: eu-south-1
@@ -87,7 +87,7 @@ jobs:
 
       - name: infracost diff
         if: github.event_name == 'pull_request'
-        uses: infracost/actions/setup@v3
+        uses: infracost/actions/setup@v4
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
       - name: infracost compare
