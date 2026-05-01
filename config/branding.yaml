@@ -1,0 +1,81 @@
+# branding.yaml — engagement-overridable brand tokens.
+#
+# Doctrine refs: Rule 80 (white-label conformance), Rule 82 (engagement
+# overlay supersedes Core defaults), Rule 88 (Region Pack pattern —
+# branding follows the same overlay-with-engagement-override semantics).
+# Charter ref: §6 (white-label readiness), §11 (single-tenant by default).
+#
+# This file is the source-of-truth for all tenant-visible brand strings.
+# The frontend reads it at build time via `frontend/scripts/gen-branding.mjs`
+# (which writes `frontend/src/lib/branding.ts`); the backend reads it at
+# boot for email templates + PDF headers/footers.
+#
+# An engagement fork places its overrides at engagements/<client>/config/
+# branding.yaml; the loader composes Core defaults < engagement overrides.
+#
+# The conformance test backend/tests/conformance/no_hardcoded_brand_test.go
+# enforces that no hard-coded brand string appears in code under
+# frontend/src/ or backend/internal/{handlers,services,templates}/ outside
+# an explicit allow-list (docs/, packs/*/CHARTER.md, CHANGELOG.md, AUTHORS,
+# LICENSE, NOTICE — these are template-author identity / regulatory-cite
+# surfaces, not tenant-visible).
+
+product:
+  # Display name shown in the UI header, browser title, email From, PDF header.
+  name: "GreenMetrics"
+  # Short tagline used under the title in the welcome screen.
+  tagline: "Monitoraggio energia e reportistica regulatory-grade"
+  # Long description used in HTML <meta name="description"> and page footers.
+  description: "GreenMetrics — monitoraggio energia e reportistica CSRD / Piano Transizione 5.0 per PMI manifatturiere e agroalimentari."
+
+vendor:
+  # Template author / vendor of record. Distinct from product.name —
+  # engagement clients see product.name in the UI; vendor.name appears
+  # only in legal footers + NOTICE / LICENSE references.
+  name: "Macena"
+  # Vendor URL (legal footer link target).
+  url: "https://www.macena.it"
+  # Support email shown in the UI's "need help?" banner + email reply-to.
+  support_email: "support@example.test"
+
+theme:
+  # Primary colour used by the UI for the brand strip + CTA buttons.
+  primary_color: "#166534"
+  # Accent colour used for status dots + KPI highlights.
+  accent_color: "#f59e0b"
+  # Background tint of the app shell.
+  background_color: "#fafaf9"
+  # Logo used in the top-left of the app shell. Local path relative to
+  # frontend/static/ or absolute https:// URL.
+  logo_path: "/logo.svg"
+  # Favicon path.
+  favicon_path: "/favicon.svg"
+
+footer:
+  # Free-form HTML rendered in the page footer. Keep ≤ 300 chars.
+  html: '© {{year}} Macena. All rights reserved.'
+  # Whether to show the "Powered by GreenMetrics template" badge in the
+  # footer. Engagement forks usually set this to false for a fully
+  # white-labelled deployment; keep true for upstream / demo deployments.
+  show_powered_by: true
+
+email:
+  # From-address display name (e.g. "GreenMetrics Notifications <noreply@...>").
+  from_name: "GreenMetrics Notifications"
+  # From-address local-part. Combined with the deployment's email domain at
+  # boot-time (see backend/internal/config/email.go).
+  from_local_part: "noreply"
+  # Footer block appended to every transactional email.
+  footer_text: |
+    Questa email è stata generata automaticamente da GreenMetrics.
+    Per assistenza scrivere a support@example.test.
+
+regulatory:
+  # Default regulatory-data-region declaration shown on report headers.
+  # Per Rule 178 — every report must declare a data region.
+  data_region: "EU/IT"
+  # Whether to show the EGE counter-signature block at the bottom of
+  # finalised report PDFs. Defaults to true for Italian-flagship engagements
+  # per Rule 137. Engagements without an EGE/ESCo relationship set this to
+  # false during Phase 0 Discovery.
+  show_ege_signature_block: true

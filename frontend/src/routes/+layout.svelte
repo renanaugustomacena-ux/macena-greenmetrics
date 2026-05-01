@@ -2,6 +2,7 @@
   import '../app.css';
   import { page } from '$app/stores';
   import SystemStatus from '$components/SystemStatus.svelte';
+  import { productName, productDescription } from '$lib/branding';
 
   const nav: Array<{ href: string; label: string; group?: string }> = [
     { href: '/',         label: 'Panoramica', group: 'monitoraggio' },
@@ -33,8 +34,13 @@
     '/settings': { title: 'Impostazioni',           subtitle: 'White-label, identità, factor source, tenant' }
   };
 
-  $: header = titleByPath[$page.url.pathname] ?? { title: 'GreenMetrics', subtitle: '' };
+  $: header = titleByPath[$page.url.pathname] ?? { title: productName, subtitle: '' };
 </script>
+
+<svelte:head>
+  <title>{header.title} · {productName}</title>
+  <meta name="description" content={productDescription} />
+</svelte:head>
 
 <div class="min-h-full flex bg-cream-50">
   <!-- ── Sidebar ───────────────────────────────────────────────────── -->
@@ -47,7 +53,7 @@
           </svg>
         </div>
         <div>
-          <h1 class="text-base font-semibold tracking-tight">GreenMetrics</h1>
+          <h1 class="text-base font-semibold tracking-tight">{productName}</h1>
           <p class="text-[10px] text-forest-300 uppercase tracking-wider mt-0.5">Italian flagship</p>
         </div>
       </div>
