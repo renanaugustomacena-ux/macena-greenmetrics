@@ -30,7 +30,7 @@ required_capabilities:
   - factor-source-ispra
   - factor-source-gse
   - factor-source-terna
-  # - factor-source-aib           # Sprint S6 — TODO
+  - factor-source-aib
 
   # ── Italian Report Packs ─────────────────────────────────────────────
   - report-builder-monthly_consumption
