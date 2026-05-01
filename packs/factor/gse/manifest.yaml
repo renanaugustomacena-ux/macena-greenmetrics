@@ -1,0 +1,19 @@
+id: factor-gse
+kind: factor
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  GSE Factor Pack — Italian renewable-energy mix shares plus the AIB
+  residual-mix entrypoint published via GSE's "Energia statistica /
+  Anagrafica" channel. The renewable share feeds Piano 5.0 attestazione
+  calculations; the AIB residual mix is the Scope 2 market-based
+  reference for ESRS E1 dossiers. Refresh cadence: annual (Q3, after
+  AIB residual-mix publication; six-month lag from production year).
+capabilities:
+  - factor-source-gse
+  - factor-aib-residual-mix
+  - factor-renewable-share-it
+dependencies: []
