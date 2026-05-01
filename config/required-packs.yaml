@@ -29,7 +29,7 @@ required_capabilities:
   # ── Italian Factor Packs ─────────────────────────────────────────────
   - factor-source-ispra
   - factor-source-gse
-  # - factor-source-terna         # Sprint S6 — TODO
+  - factor-source-terna
   # - factor-source-aib           # Sprint S6 — TODO
 
   # ── Italian Report Packs ─────────────────────────────────────────────

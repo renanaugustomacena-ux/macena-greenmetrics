@@ -1,0 +1,22 @@
+id: factor-terna
+kind: factor
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  Terna Factor Pack — Italian electricity grid mix factors at monthly
+  granularity (Phase E) for Scope 2 location-based emissions and
+  hourly renewable-share patterns. Terna is the Italian transmission
+  system operator (TSO) and publishes the authoritative real-time
+  electricity mix on its Transparency Platform. Phase E ships a static
+  monthly factor table for 2024-2026 derived from Terna public reports;
+  Phase G integrates the Terna Trasparenza API with a circuit breaker
+  per ADR-0009 (rate-limit + 60-second back-off + signed cache).
+  Companion to ISPRA + GSE Factor Packs — ISPRA provides annual ENEA-
+  endorsed values; Terna provides finer-grained monthly + hourly
+  values used by REGO-traced and time-of-use emission reporting.
+capabilities:
+  - factor-source-terna
+dependencies: []
