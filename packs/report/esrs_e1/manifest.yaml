@@ -1,0 +1,21 @@
+id: report-esrs_e1
+kind: report
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  ESRS E1 Climate Change Report Pack — produces the quantitative
+  data-points (E1-5 Energy consumption and mix; E1-6 Gross Scope 1/2/3
+  + Total GHG emissions) of the EFRAG ESRS E1 Climate Change topical
+  standard for an Italian-flagship engagement. Narrative data-points
+  E1-1, E1-2, E1-3, E1-4, E1-7, E1-8, E1-9 are bundled by the
+  engagement-fork's reporting orchestrator from client-supplied content
+  per Plan §5.4. EFRAG XBRL tagging deferred to Phase H Sprint S15
+  (Rule 131 formal-spec validation).
+capabilities:
+  - report-builder-esrs_e1
+dependencies:
+  - factor-source-ispra
+  - factor-source-gse

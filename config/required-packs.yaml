@@ -35,7 +35,7 @@ required_capabilities:
   # ── Italian Report Packs ─────────────────────────────────────────────
   - report-builder-monthly_consumption
   - report-builder-co2_footprint
-  # - report-builder-esrs_e1      # Sprint S6 — TODO
+  - report-builder-esrs_e1
   # - report-builder-piano_5_0    # Sprint S6 — TODO
   # - report-builder-conto_termico # Sprint S6 — TODO
   # - report-builder-tee          # Sprint S6 — TODO
