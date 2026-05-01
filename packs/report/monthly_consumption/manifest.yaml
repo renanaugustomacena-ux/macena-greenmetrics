@@ -1,0 +1,18 @@
+id: report-monthly_consumption
+kind: report
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  Monthly consumption Report Pack — periodic operator-facing summary of
+  energy consumption per meter / per cost centre, with optional Scope 2
+  emissions overlay using the ISPRA factor source. The simplest of the
+  Italian-flagship Report Packs; serves as the reference implementation
+  for Builder purity (Rule 91), deterministic serialisation (Rule 141),
+  and provenance bundle wiring (Rule 95).
+capabilities:
+  - report-builder-monthly_consumption
+dependencies:
+  - factor-ispra
