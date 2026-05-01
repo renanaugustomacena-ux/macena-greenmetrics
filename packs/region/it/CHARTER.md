@@ -73,15 +73,15 @@ Authority lookup map exposed via `Profile().Authorities`:
 
 | Authority | URL / portal |
 |---|---|
-| `gse` | https://areaclienti.gse.it |
-| `enea` | https://audit102.enea.it |
-| `ispra` | https://www.isprambiente.gov.it |
-| `terna` | https://transparency.entsoe.eu |
-| `arera` | https://www.arera.it |
-| `garante` | https://www.garanteprivacy.it |
-| `acn` | https://www.acn.gov.it |
-| `mimit` | https://www.mimit.gov.it |
-| `mase` | https://www.mase.gov.it |
+| `gse` | <https://areaclienti.gse.it> |
+| `enea` | <https://audit102.enea.it> |
+| `ispra` | <https://www.isprambiente.gov.it> |
+| `terna` | <https://transparency.entsoe.eu> |
+| `arera` | <https://www.arera.it> |
+| `garante` | <https://www.garanteprivacy.it> |
+| `acn` | <https://www.acn.gov.it> |
+| `mimit` | <https://www.mimit.gov.it> |
+| `mase` | <https://www.mase.gov.it> |
 
 ## 6. Privacy regime
 
