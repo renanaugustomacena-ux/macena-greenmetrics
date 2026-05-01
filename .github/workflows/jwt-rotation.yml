@@ -28,10 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: production-secrets
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Configure AWS credentials (OIDC, secops-rotate-irsa)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/greenmetrics-secops-rotate-irsa
           aws-region: eu-south-1

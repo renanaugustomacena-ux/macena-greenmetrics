@@ -47,8 +47,8 @@ jobs:
     name: Pre-commit · mirror
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with: { python-version: '3.12' }
       # Pre-commit's `language: golang` hooks (golangci-lint v1.61.0,
       # dnephin/pre-commit-golang v0.5.1) do `go install ./...` on the hook
@@ -56,9 +56,9 @@ jobs:
       # contain code that fails to compile under Go 1.26's stricter constant
       # checks. Pin Go to 1.24 here only — the project itself is built
       # against 1.26 in `backend-build` / `backend-unit` / `backend-lint`.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: '1.24' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with: { node-version: '20' }
       - run: pip install pre-commit
       - run: pre-commit run --all-files --show-diff-on-failure
@@ -72,8 +72,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: backend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.26'
           cache: true
@@ -83,7 +83,7 @@ jobs:
       - name: golangci-lint
         # Action v7+ supports golangci-lint v2.x. v6 only supports v1 (which
         # is built with Go 1.24 and refuses to lint Go 1.26 code).
-        uses: golangci/golangci-lint-action@v7
+        uses: golangci/golangci-lint-action@v9
         with:
           version: v2.11.4
           working-directory: backend
@@ -109,8 +109,8 @@ jobs:
     env:
       DATABASE_URL: postgres://greenmetrics:greenmetrics@localhost:5432/greenmetrics_test?sslmode=disable
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.26'
           cache: true
@@ -123,7 +123,7 @@ jobs:
           echo "Total coverage: ${coverage}%"
           # TODO renan: enforce >= 80 once internal/domain/ ships in S2.
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-coverage
           path: backend/coverage.out
@@ -134,8 +134,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: backend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.26'
           cache: true
@@ -151,8 +151,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with: { node-version: '20', cache: 'npm', cache-dependency-path: frontend/package-lock.json }
       - run: npm ci || npm install
       - run: npm run lint
@@ -164,8 +164,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with: { node-version: '20', cache: 'npm', cache-dependency-path: frontend/package-lock.json }
       - run: npm ci || npm install
       - run: npm test
@@ -176,8 +176,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with: { node-version: '20', cache: 'npm', cache-dependency-path: frontend/package-lock.json }
       - run: npm ci || npm install
       - run: npm run build
@@ -190,10 +190,10 @@ jobs:
     needs: [backend-build, frontend-build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
       - name: Build backend image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           push: false
@@ -201,7 +201,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build frontend image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./frontend
           push: false
@@ -218,7 +218,7 @@ jobs:
     needs: [pre-commit-ci]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         # Gitleaks needs full git history to scan the diff between base and
         # head; the default shallow clone makes it fail with "stderr is not
         # empty / failed to scan Git repository".
@@ -231,7 +231,7 @@ jobs:
         uses: returntocorp/semgrep-action@v1
         with: { config: p/default p/owasp-top-ten p/golang }
       - name: Set up Go (for govulncheck)
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with: { go-version: '1.26' }
       - name: govulncheck
         run: |
@@ -265,8 +265,8 @@ jobs:
     needs: [pre-commit-ci]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with: { go-version: '1.26', cache: true, cache-dependency-path: backend/go.sum }
       - name: Install go-licenses
         run: go install github.com/google/go-licenses@latest
@@ -276,7 +276,7 @@ jobs:
           go-licenses check ./... \
             --disallowed_types=forbidden,restricted \
             --ignore=github.com/greenmetrics/backend
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with: { node-version: '20' }
       - name: npm license-checker
         working-directory: frontend
@@ -292,7 +292,7 @@ jobs:
     needs: [pre-commit-ci]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install kubeconform
         run: |
           curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
@@ -320,12 +320,12 @@ jobs:
     needs: [pre-commit-ci]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: hadolint backend
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.3.0
         with: { dockerfile: backend/Dockerfile, format: json, output-file: hadolint-backend.json, no-fail: true }
       - name: hadolint frontend
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.3.0
         with: { dockerfile: frontend/Dockerfile, format: json, output-file: hadolint-frontend.json, no-fail: true }
       - name: Print hadolint summary
         run: |
@@ -336,8 +336,8 @@ jobs:
     needs: [pre-commit-ci]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@v6
+      - uses: hashicorp/setup-terraform@v4
         with: { terraform_version: '1.8.0' }
       - name: terraform fmt + validate
         working-directory: terraform
@@ -366,7 +366,7 @@ jobs:
     needs: [pre-commit-ci]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: raven-actions/actionlint@v2
 
   # --------------------------------------------------------------------------
@@ -377,8 +377,8 @@ jobs:
     needs: [pre-commit-ci]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with: { node-version: '20' }
       - name: redocly lint
         run: |
@@ -393,8 +393,8 @@ jobs:
     needs: [pre-commit-ci]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with: { node-version: '20' }
       - name: ajv validate
         run: |
@@ -412,9 +412,9 @@ jobs:
     needs: [pre-commit-ci]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: markdownlint ADRs
-        uses: DavidAnson/markdownlint-cli2-action@v17
+        uses: DavidAnson/markdownlint-cli2-action@v23
         with:
           globs: 'docs/adr/*.md'
       - name: Verify Tradeoff Stanza presence
@@ -439,8 +439,8 @@ jobs:
     needs: [backend-test, security]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
         with: { name: backend-coverage, path: backend }
       - name: Generate SBOM (Syft)
         uses: anchore/sbom-action@v0
