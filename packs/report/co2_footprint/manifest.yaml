@@ -1,0 +1,18 @@
+id: report-co2_footprint
+kind: report
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  Carbon footprint Report Pack — Scope 1 + Scope 2 (location-based +
+  market-based) breakdown across the engagement deployment's combustion
+  and electricity readings. Drives the operator-dashboard "carbon"
+  surface and the simpler periodic CO₂ summary delivered with every
+  monthly report cycle. Companion to `report-monthly_consumption`.
+capabilities:
+  - report-builder-co2_footprint
+dependencies:
+  - factor-source-ispra
+  - factor-source-gse
