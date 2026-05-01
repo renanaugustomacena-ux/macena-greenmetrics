@@ -1,0 +1,20 @@
+id: region-it
+kind: region
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  Italian Region Pack — flagship reference per Rule 88.
+  Bundles timezone (Europe/Rome), locale (it_IT.UTF-8), currency (EUR with
+  comma decimals), Italian national + Veneto regional holiday calendar,
+  default regulatory regimes (CSRD wave 2/3, Piano Transizione 5.0,
+  Conto Termico 2.0, Certificati Bianchi TEE, audit D.Lgs. 102/2014, ETS,
+  GDPR, NIS2 Italia, ARERA), and the regulatory threshold table referenced
+  by the Italian Report Packs.
+capabilities:
+  - region-profile-it
+  - holiday-calendar-it
+  - regulatory-thresholds-it
+dependencies: []

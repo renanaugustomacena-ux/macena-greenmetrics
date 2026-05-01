@@ -13,30 +13,44 @@
 # its overrides in engagements/<client>/config/required-packs.yaml; the loader
 # composes Core defaults < Pack defaults < engagement overrides.
 #
-# Phase E Sprint S5 ships an empty list (no Packs are extracted yet). Sprint
-# S6 begins populating Italian Region + Italian Factor + Italian Report Packs.
-# Sprint S7 adds Italian Protocol Packs. Sprint S8 adds Identity Packs.
+# Sprint S6 begins populating Italian Region + Italian Factor + Italian
+# Report Packs. The first three (Region IT + ISPRA + monthly_consumption)
+# land in this PR; the remaining Italian Report Packs (ESRS E1, Piano 5.0,
+# Conto Termico, TEE, audit 102/2014, CO₂ footprint) and the GSE / Terna /
+# AIB Factor Packs follow in subsequent S6 PRs. Italian Protocol Packs land
+# in S7. Identity Packs in S8.
 
-required_capabilities: []
+required_capabilities:
+  # ── Italian Region Pack ──────────────────────────────────────────────
+  - region-profile-it
+  - holiday-calendar-it
+  - regulatory-thresholds-it
 
-# Example shape post-extraction (Sprint S6+):
-# required_capabilities:
-#   - region.it
-#   - factor.source.ispra
-#   - factor.source.gse
-#   - factor.source.terna
-#   - factor.source.aib
-#   - report.builder.esrs_e1
-#   - report.builder.piano_5_0
-#   - report.builder.conto_termico
-#   - report.builder.tee
-#   - report.builder.audit_dlgs102
-#   - report.builder.monthly_consumption
-#   - report.builder.co2_footprint
-#   - protocol.modbus.tcp
-#   - protocol.modbus.rtu
-#   - protocol.mbus
-#   - protocol.sunspec
-#   - protocol.pulse
-#   - protocol.ocpp.v1_6
-#   - identity.local_db
+  # ── Italian Factor Packs ─────────────────────────────────────────────
+  - factor-source-ispra
+  # - factor-source-gse           # Sprint S6 — TODO
+  # - factor-source-terna         # Sprint S6 — TODO
+  # - factor-source-aib           # Sprint S6 — TODO
+
+  # ── Italian Report Packs ─────────────────────────────────────────────
+  - report-builder-monthly_consumption
+  # - report-builder-esrs_e1      # Sprint S6 — TODO
+  # - report-builder-piano_5_0    # Sprint S6 — TODO
+  # - report-builder-conto_termico # Sprint S6 — TODO
+  # - report-builder-tee          # Sprint S6 — TODO
+  # - report-builder-audit_dlgs102 # Sprint S6 — TODO
+  # - report-builder-co2_footprint # Sprint S6 — TODO
+
+  # ── Italian Protocol Packs (Sprint S7) ───────────────────────────────
+  # - protocol-modbus-tcp
+  # - protocol-modbus-rtu
+  # - protocol-mbus
+  # - protocol-sunspec
+  # - protocol-pulse
+  # - protocol-ocpp-v1_6
+  # - protocol-ocpp-v2_0_1
+
+  # ── Identity Packs (Sprint S8) ───────────────────────────────────────
+  # - identity-local_db
+  # - identity-saml
+  # - identity-oidc

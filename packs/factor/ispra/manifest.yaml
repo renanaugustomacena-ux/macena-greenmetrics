@@ -1,0 +1,18 @@
+id: factor-ispra
+kind: factor
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  ISPRA Factor Pack — Italian national grid emission factors per
+  ISPRA Rapporto 404 (annual). Ships canonical Scope 2 location-based
+  factor for the Italian electrical mix plus per-fuel Scope 1
+  combustion factors (D.M. 11 gennaio 2017 + tabelle di conversione).
+  Refresh cadence: annual (Q2, after ISPRA April publication).
+capabilities:
+  - factor-source-ispra
+  - factor-scope-2-location-based
+  - factor-italian-grid-mix
+dependencies: []
