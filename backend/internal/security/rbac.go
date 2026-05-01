@@ -32,6 +32,12 @@ const (
 	RoleAuditor  Role = "auditor"
 	RoleViewer   Role = "viewer"
 	RoleReadOnly Role = "readonly"
+	// RoleDPO — Data Protection Officer. The only role authorised to invoke
+	// GDPR Data Subject Access Request (DSAR) export/erase endpoints. The
+	// DPO role is an Italian-flagship requirement (Garante guidance + ARERA
+	// 646/2015) and must be assigned to a named human; service accounts may
+	// not hold it.
+	RoleDPO Role = "dpo"
 )
 
 // Permission is a colon-separated `resource:verb` grant.
@@ -53,6 +59,9 @@ const (
 	PermUsersAdmin             Permission = "users:admin"
 	PermJobsRead               Permission = "jobs:read"
 	PermPulseIngest            Permission = "pulse:ingest"
+	// GDPR DSAR — Data Subject Access Request endpoints. Reserved to the DPO role.
+	PermDSARExport             Permission = "dsar:export"
+	PermDSARErase              Permission = "dsar:erase"
 )
 
 // rolePermissions defines the canonical role → permission map. Modifying this map
@@ -111,6 +120,14 @@ var rolePermissions = map[Role][]Permission{
 		PermAlertsRead,
 		PermEmissionFactorsRead,
 		PermJobsRead,
+	},
+	// DPO — Data Protection Officer. ONLY DSAR permissions; DPO does not
+	// hold operational read/write rights. Audit log captures every DSAR
+	// invocation per Rule 62.
+	RoleDPO: {
+		PermDSARExport,
+		PermDSARErase,
+		PermAuditRead,
 	},
 }
 
