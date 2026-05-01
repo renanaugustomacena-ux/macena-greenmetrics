@@ -36,7 +36,7 @@ required_capabilities:
   - report-builder-monthly_consumption
   - report-builder-co2_footprint
   - report-builder-esrs_e1
-  # - report-builder-piano_5_0    # Sprint S6 — TODO
+  - report-builder-piano_5_0
   # - report-builder-conto_termico # Sprint S6 — TODO
   # - report-builder-tee          # Sprint S6 — TODO
   # - report-builder-audit_dlgs102 # Sprint S6 — TODO
