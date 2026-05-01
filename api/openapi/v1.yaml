@@ -939,7 +939,7 @@ paths:
         actual bundling cascade lands in Phase F Sprint S10.
       parameters:
         - { name: tenant_id, in: path, required: true, schema: { type: string, format: uuid } }
-        - { name: user_id,   in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: user_id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "202":
           description: DSAR export queued.
@@ -967,7 +967,7 @@ paths:
         the actual cascade lands in Phase F Sprint S10.
       parameters:
         - { name: tenant_id, in: path, required: true, schema: { type: string, format: uuid } }
-        - { name: user_id,   in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: user_id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "202":
           description: DSAR erase queued.
@@ -993,4 +993,4 @@ tags:
   - { name: Alerts, description: "Threshold + anomaly alerts." }
   - { name: EmissionFactors, description: "ISPRA / Terna / AIB factor catalogue." }
   - { name: Pulse, description: "HMAC-signed pulse-counter webhook." }
-  - { name: DSAR,  description: "GDPR Data Subject Access Request — export + erase. DPO-only." }
+  - { name: DSAR, description: "GDPR Data Subject Access Request — export + erase. DPO-only." }
