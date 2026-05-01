@@ -1,0 +1,24 @@
+id: factor-aib
+kind: factor
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  AIB Factor Pack — European Residual Mix factors per the Association
+  of Issuing Bodies (AIB), the cooperation body of European GO
+  (Guarantee of Origin) issuing bodies. The AIB publishes the
+  European Residual Mix annually for all participating European
+  countries (30+); these values represent the GHG emissions per kWh
+  attributable to electricity NOT claimed by GO certificates and are
+  the regulator-recognised baseline for Scope 2 market-based
+  reporting under ISO 14064-1 + GHG Protocol Scope 2 Guidance.
+  Phase E ships static Italy + key trading-partner countries (DE, FR,
+  ES, AT, CH) for the 2022-2025 reporting years; Phase G integrates
+  the AIB Carbon Footprint Calculator API with a circuit breaker per
+  ADR-0009. Supersedes the it_aib_residual_mix value previously
+  bundled in factor-source-gse with its own dedicated provenance.
+capabilities:
+  - factor-source-aib
+dependencies: []
