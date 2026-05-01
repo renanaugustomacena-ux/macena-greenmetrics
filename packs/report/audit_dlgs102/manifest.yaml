@@ -1,0 +1,25 @@
+id: report-audit_dlgs102
+kind: report
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  Audit energetico D.Lgs. 102/2014 art. 8 Report Pack — produces the
+  quantitative half of the legally-mandated 4-yearly energy audit
+  ("diagnosi energetica obbligatoria") required of grandi imprese and
+  imprese energivore. Aggregates readings into a per-vector + per-site
+  energy baseline, converts to tep via statutory ENEA / ARERA
+  conversion factors, surfaces the obligation block (audit type,
+  4-yearly cadence, 5-December deadline, exemption basis), and emits
+  EnPI candidates. Narrative content (UNI CEI EN 16247-1..4 compliance
+  statement, site-visit summaries, scope description, EGE certifier
+  ID, improvement-measure list with payback analysis) is bundled by
+  the engagement-fork's reporting orchestrator from client-supplied
+  content. ENEA portal submission (audit102.enea.it) lands as a
+  separate engagement-side Pack in Phase H Sprint S16.
+capabilities:
+  - report-builder-audit_dlgs102
+dependencies:
+  - factor-source-ispra
