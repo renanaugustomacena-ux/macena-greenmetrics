@@ -38,8 +38,8 @@ required_capabilities:
   - report-builder-esrs_e1
   - report-builder-piano_5_0
   - report-builder-audit_dlgs102
+  - report-builder-tee
   # - report-builder-conto_termico # Sprint S6 — TODO
-  # - report-builder-tee          # Sprint S6 — TODO
 
   # ── Italian Protocol Packs (Sprint S7) ───────────────────────────────
   # - protocol-modbus-tcp
