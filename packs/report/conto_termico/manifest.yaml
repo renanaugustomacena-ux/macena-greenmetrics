@@ -1,0 +1,27 @@
+id: report-conto_termico
+kind: report
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  Conto Termico Report Pack — Italian thermal-energy-efficiency
+  incentive scheme administered by GSE. Covers DM 16/02/2016
+  ("Conto Termico 2.0", €900M/year, 1-shot ≤€5k or 2-5 year annual
+  rates) and DM 7/08/2025 ("Conto Termico 3.0", capital grant up to
+  65% of eligible costs, 90-day submission window, expanded
+  beneficiary universe including ETS / CER). Pack accepts the per-
+  intervention incentive amount from engagement-supplied scenario
+  inputs (per-intervention formulas land in Phase F when GSE Linee
+  Guida APIs are integrated) and computes the payment schedule
+  (1-shot vs annual-rates), the capital-grant cap, and the regime
+  selector. Narrative content (intervention description, ATECO codes,
+  beneficiary contact, supplier invoices, certifier ID) is bundled
+  by the engagement-fork's reporting orchestrator. GSE Portaltermico
+  submission deferred to Phase H Sprint S16.
+capabilities:
+  - report-builder-conto_termico
+dependencies:
+  - factor-source-ispra
+  - factor-source-gse
