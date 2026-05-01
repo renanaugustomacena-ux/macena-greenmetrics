@@ -1,6 +1,13 @@
 # Dependabot configuration for GreenMetrics.
 # See docs/SUPPLY-CHAIN.md for the full supply-chain trust model.
 # Doctrine refs: Rules 53 (supply chain), 55 (continuous threat modeling), 56 (automation over process).
+#
+# 2026-05-01 update: every ecosystem now ships a SINGLE grouped PR per cycle —
+# security updates fast-tracked into their own group, all non-security
+# updates (patch + minor + major) batched together. Cadence dropped from
+# weekly to monthly to keep the PR queue quiet between active sprints.
+# Major-version bumps now arrive together for batched human review instead
+# of fanning out into 9+ individual PRs.
 
 version: 2
 updates:
@@ -9,11 +16,11 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/backend"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "06:00"
       timezone: "Europe/Rome"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     reviewers:
       - "greenmetrics/platform-team"
       - "greenmetrics/secops"
@@ -28,20 +35,22 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
-      go-minor-patch:
+      go-all:
+        applies-to: version-updates
         update-types:
-          - "minor"
           - "patch"
+          - "minor"
+          - "major"
 
   # NPM — frontend.
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "06:00"
       timezone: "Europe/Rome"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     reviewers:
       - "greenmetrics/app-team"
       - "greenmetrics/secops"
@@ -56,20 +65,22 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
-      npm-minor-patch:
+      npm-all:
+        applies-to: version-updates
         update-types:
-          - "minor"
           - "patch"
+          - "minor"
+          - "major"
 
   # GitHub Actions — pin to commit SHAs (Rule 53 supply chain).
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "06:00"
       timezone: "Europe/Rome"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     reviewers:
       - "greenmetrics/secops"
       - "greenmetrics/platform-team"
@@ -78,14 +89,18 @@ updates:
       - "github-actions"
     commit-message:
       prefix: "chore(actions)"
+    groups:
+      actions-all:
+        patterns:
+          - "*"
 
   # Docker base images — backend.
   - package-ecosystem: "docker"
     directory: "/backend"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     reviewers:
       - "greenmetrics/secops"
     labels:
@@ -93,14 +108,18 @@ updates:
       - "docker"
     commit-message:
       prefix: "chore(docker)"
+    groups:
+      docker-backend-all:
+        patterns:
+          - "*"
 
   # Docker base images — frontend.
   - package-ecosystem: "docker"
     directory: "/frontend"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     reviewers:
       - "greenmetrics/secops"
     labels:
@@ -108,14 +127,18 @@ updates:
       - "docker"
     commit-message:
       prefix: "chore(docker)"
+    groups:
+      docker-frontend-all:
+        patterns:
+          - "*"
 
   # Terraform providers + modules.
   - package-ecosystem: "terraform"
     directory: "/terraform"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     reviewers:
       - "greenmetrics/platform-team"
       - "greenmetrics/secops"
@@ -124,3 +147,7 @@ updates:
       - "terraform"
     commit-message:
       prefix: "chore(terraform)"
+    groups:
+      terraform-all:
+        patterns:
+          - "*"
