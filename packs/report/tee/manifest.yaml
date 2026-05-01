@@ -1,0 +1,24 @@
+id: report-tee
+kind: report
+version: 1.0.0
+min_core_version: 1.0.0
+pack_contract_version: 1.0.0
+author: "Macena · Renan Augusto Macena"
+license_spdx: "LicenseRef-Macena-GreenMetrics-Proprietary"
+notes: |
+  TEE / Certificati Bianchi (Titoli di Efficienza Energetica) Report
+  Pack — produces the quantitative per-project tep-saving + K-factor
+  certificate-issuance calculation for the GSE-administered tradeable
+  certificate scheme (DM 11/01/2017; new 2025-2030 regime DM MASE
+  21/07/2025). One TEE = 1 tep certified annual energy saving. Pack
+  computes ex-ante / ex-post tep, applies the K1=1.2 / K2=0.8
+  multiplier per the project's vita utile half, and emits the
+  certificate count for the current year. Narrative content (project
+  description, EGE certifier ID, RVC submission ID, vita utile
+  methodology) is bundled by the engagement-fork's reporting
+  orchestrator. GSE portal RVC submission deferred to Phase H Sprint S16.
+capabilities:
+  - report-builder-tee
+dependencies:
+  - factor-source-ispra
+  - factor-source-gse
