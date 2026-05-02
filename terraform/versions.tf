@@ -4,13 +4,13 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.60"
+      version = "~> 6.43"
     }
     # Alternative for Italian-sovereignty deployments:
     # aruba = { source = "ArubaCloud/aruba", version = "~> 0.4" }
     grafana = {
       source  = "grafana/grafana"
-      version = "~> 3.8"
+      version = "~> 4.35"
     }
     random = {
       source  = "hashicorp/random"
